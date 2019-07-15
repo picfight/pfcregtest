@@ -5,7 +5,7 @@ Picfight (Picfightcoin) regression testing
 
 Harbours a pre-configured test setup and unit tests to run RPC-driven node tests.
 
-Builds a btcd-specific RPC testing harness crafting and executing integration
+Builds a pfcd-specific RPC testing harness crafting and executing integration
 tests by driving a `pfcd` instance via the `RPC` interface.
 
 Each instance of an active harness comes equipped with a simple in-memory
