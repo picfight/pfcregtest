@@ -30,7 +30,7 @@ set -ex
 
 # Default GOVERSION
 [[ ! "$GOVERSION" ]] && GOVERSION=1.12
-REPO=dcrregtest
+REPO=pfcregtest
 
 testrepo () {
   GO=go
@@ -63,7 +63,7 @@ if [ ! "$DOCKER" ]; then
 fi
 
 # use Travis cache with docker
-DOCKER_IMAGE_TAG=btcd-golang-builder-$GOVERSION
+DOCKER_IMAGE_TAG=pfcd-golang-builder-$GOVERSION
 $DOCKER pull jfixby/$DOCKER_IMAGE_TAG
 
 $DOCKER run --rm -it -v $(pwd):/src:Z jfixby/$DOCKER_IMAGE_TAG /bin/bash -c "\
