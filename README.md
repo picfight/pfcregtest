@@ -1,4 +1,4 @@
-Pfcsuite (Picfightcoin) regression testing
+Picfight (Picfightcoin) regression testing
 =======
 [![Build Status](http://img.shields.io/travis/picfight/pfcregtest.svg)](https://travis-ci.org/picfight/pfcregtest)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
