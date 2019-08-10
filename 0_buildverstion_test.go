@@ -3,6 +3,7 @@ package pfcregtest
 import (
 	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/rpcclient"
+	"os"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ func TestBuildVerstion(t *testing.T) {
 	EXPECTED := "build-00002.mainnet"
 	if version.VersionString != EXPECTED {
 		t.Fatalf("Wrong build vesion: <%v>, expected <%v>", version.VersionString, EXPECTED)
+		os.Exit(-1)
 	}
 
 }
