@@ -11,7 +11,7 @@ func TestBuildVerstion(t *testing.T) {
 	//if testing.Short() {
 	//	t.Skip("Skipping RPC harness tests in short mode")
 	//}
-	pool := testSetup.Mainnet0
+	pool := testSetup.Regnet25
 	r := pool.NewInstance(t.Name()).(*coinharness.Harness)
 	defer pool.Dispose(r)
 	// Create a new block connecting to the current tip.
@@ -19,7 +19,7 @@ func TestBuildVerstion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get build vesion: %v", err)
 	}
-	EXPECTED := "build-00002.mainnet"
+	EXPECTED := "build-00002.regnet"
 	if version.VersionString != EXPECTED {
 		t.Fatalf("Wrong build vesion: <%v>, expected <%v>", version.VersionString, EXPECTED)
 		os.Exit(-1)
