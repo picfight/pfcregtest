@@ -69,6 +69,7 @@ $DOCKER pull jfixby/$DOCKER_IMAGE_TAG
 $DOCKER run --rm -it -v $(pwd):/src:Z jfixby/$DOCKER_IMAGE_TAG /bin/bash -c "\
   rsync -ra --filter=':- .gitignore'  \
   /src/ /go/src/github.com/picfight/$REPO/ && \
+  rm -r -f /go/src/github.com/picfight/pfcd && \
   git clone https://github.com/picfight/pfcd /go/src/github.com/picfight/pfcd && \
   pushd /go/src/github.com/picfight/pfcd && env GO111MODULE=on go install . .\cmd\...  && \
   popd && \
