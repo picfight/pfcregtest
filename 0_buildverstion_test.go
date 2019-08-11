@@ -19,7 +19,8 @@ func TestBuildVerstion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get build vesion: %v", err)
 	}
-	EXPECTED := "build-00002.regnet"
+	buid_id := "b100"
+	EXPECTED := buid_id + ".regnet"
 	if version.VersionString != EXPECTED {
 		t.Fatalf("Wrong build vesion: <%v>, expected <%v>", version.VersionString, EXPECTED)
 		os.Exit(-1)
