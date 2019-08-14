@@ -19,7 +19,7 @@ func TestBuildVerstion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to get build vesion: %v", err)
 	}
-	buid_id := "b113"
+	buid_id := "b200"
 	EXPECTED := buid_id + ".regtest"
 	if version.VersionString != EXPECTED {
 		t.Fatalf("Wrong build vesion: <%v>, expected <%v>", version.VersionString, EXPECTED)
