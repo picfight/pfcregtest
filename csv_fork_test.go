@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	csvKey = "csv"
+	dummyForkKey = "dummy"
 )
 
 // makeTestOutput creates an on-chain output paying to a freshly generated
@@ -99,13 +99,6 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 // them.
 //
 // Overview:
-//  - Pre soft-fork:
-//    - Transactions with non-final lock-times from the PoV of MTP should be
-//      rejected from the mempool.
-//    - Transactions within non-final MTP based lock-times should be accepted
-//      in valid blocks.
-//
-//  - Post soft-fork:
 //    - Transactions with non-final lock-times from the PoV of MTP should be
 //      rejected from the mempool and when found within otherwise valid blocks.
 //    - Transactions with final lock-times from the PoV of MTP should be
@@ -172,8 +165,6 @@ func TestBIP0113Activation(t *testing.T) {
 			"non-final, instead: %v", err)
 	}
 
-	// However, since the block validation consensus rules haven't yet
-	// activated, a block including the transaction should be accepted.
 	{
 		txns := []*pfcutil.Tx{pfcutil.NewTx(tx)}
 		args := pfcharness.GenerateBlockArgs{
@@ -184,34 +175,34 @@ func TestBIP0113Activation(t *testing.T) {
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
 		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
-		if err != nil {
-			t.Fatalf("unable to submit block: %v", err)
+		if err == nil {
+			t.Fatalf("Block should be rejected: %v", block)
 		}
-		txid := tx.TxHash()
-		assertTxInBlock(r, t, block.Hash(), &txid)
+		//txid := tx.TxHash()
+		//assertTxInBlock(r, t, block.Hash(), &txid)
 	}
-	// At this point, the block height should be 103: we mined 101 blocks
+	// At this point, the block height should be 102: we mined 101 blocks
 	// to create a single mature output, then an additional block to create
 	// a new output, and then mined a single block above to include our
-	// transaction.
-	assertChainHeight(r, t, 103)
+	// transaction, and the block was rejected.
+	assertChainHeight(r, t, 102)
 
 	// Next, mine enough blocks to ensure that the soft-fork becomes
 	// activated. Assert that the block version of the second-to-last block
 	// in the final range is active.
 
 	// Next, mine ensure blocks to ensure that the soft-fork becomes
-	// active. We're at height 103 and we need 200 blocks to be mined after
+	// active. We're at height 102 and we need 200 blocks to be mined after
 	// the genesis target period, so we mine 196 blocks. This'll put us at
 	// height 299. The getblockchaininfo call checks the state for the
 	// block AFTER the current height.
-	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 4
+	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 4 + 1
 	if _, err := r.NodeRPCClient().(*rpcclient.Client).Generate(numBlocks); err != nil {
 		t.Fatalf("unable to generate blocks: %v", err)
 	}
 
 	assertChainHeight(r, t, 299)
-	assertSoftForkStatus(r, t, csvKey, blockchain.ThresholdActive)
+	assertSoftForkStatus(r, t, dummyForkKey, blockchain.ThresholdActive)
 
 	// The timeLockDeltas slice represents a series of deviations from the
 	// current MTP which will be used to test border conditions w.r.t
@@ -426,7 +417,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	r := setup.NewInstance(t.Name()).(*coinharness.Harness)
 	defer setup.Dispose(r)
 
-	assertSoftForkStatus(r, t, csvKey, blockchain.ThresholdStarted)
+	assertSoftForkStatus(r, t, dummyForkKey, blockchain.ThresholdStarted)
 
 	harnessAddr, err := r.Wallet.NewAddress(nil)
 	if err != nil {
@@ -450,7 +441,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	// As the soft-fork hasn't yet activated _any_ transaction version
 	// which uses the CSV opcode should be accepted. Since at this point,
 	// CSV doesn't actually exist, it's just a NOP.
-	for txVersion := int32(0); txVersion < 3; txVersion++ {
+	for txVersion := int32(0); txVersion < 4; txVersion++ {
 		// Create a trivially spendable output with a CSV lock-time of
 		// 10 relative blocks.
 		redeemScript, testUTXO, tx, err := createCSVOutput(r, t, outputAmt,
@@ -487,9 +478,6 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 				"instead accepted")
 		}
 
-		// However, this transaction should be accepted in a custom
-		// generated block as CSV validation for scripts within blocks
-		// shouldn't yet be active.
 		txns := []*pfcutil.Tx{pfcutil.NewTx(spendingTx)}
 
 		args := pfcharness.GenerateBlockArgs{
@@ -500,28 +488,28 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
 		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
-		if err != nil {
-			t.Fatalf("unable to submit block: %v", err)
+		if err == nil {
+			t.Fatalf("Block should be rejected: %v", block)
 		}
-		txid = spendingTx.TxHash()
-		assertTxInBlock(r, t, block.Hash(), &txid)
+		//txid = spendingTx.TxHash()
+		//assertTxInBlock(r, t, block.Hash(), &txid)
 	}
 
-	// At this point, the block height should be 107: we started at height
-	// 101, then generated 2 blocks in each loop iteration above.
-	assertChainHeight(r, t, 107)
+	// At this point, the block height should be 105: we started at height
+	// 101, then generated 1 valid block in each loop iteration above.
+	assertChainHeight(r, t, 105)
 
 	// With the height at 107 we need 200 blocks to be mined after the
 	// genesis target period, so we mine 192 blocks. This'll put us at
 	// height 299. The getblockchaininfo call checks the state for the
 	// block AFTER the current height.
-	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 8
+	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 8 + 2
 	if _, err := r.NodeRPCClient().(*rpcclient.Client).Generate(numBlocks); err != nil {
 		t.Fatalf("unable to generate blocks: %v", err)
 	}
 
 	assertChainHeight(r, t, 299)
-	assertSoftForkStatus(r, t, csvKey, blockchain.ThresholdActive)
+	assertSoftForkStatus(r, t, dummyForkKey, blockchain.ThresholdActive)
 
 	// Knowing the number of outputs needed for the tests below, create a
 	// fresh output for use within each of the test-cases below.
