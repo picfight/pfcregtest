@@ -53,9 +53,10 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 
 	// Next, create and broadcast a transaction paying to the output.
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{output},
-		FeeRate: 10,
-		Change:  true,
+		Outputs:   []coinharness.OutputTx{output},
+		FeeRate:   10,
+		Change:    true,
+		TxVersion: wire.TxVersion,
 	}
 	fundTx, err := r.Wallet.CreateTransaction(ctargs)
 	if err != nil {
@@ -330,9 +331,10 @@ func createCSVOutput(r *coinharness.Harness, t *testing.T,
 	// Finally create a valid transaction which creates the output crafted
 	// above.
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{output},
-		FeeRate: 10,
-		Change:  true,
+		Outputs:   []coinharness.OutputTx{output},
+		FeeRate:   10,
+		Change:    true,
+		TxVersion: wire.TxVersion,
 	}
 	tx, err := r.Wallet.CreateTransaction(ctargs)
 	if err != nil {

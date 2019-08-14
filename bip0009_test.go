@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/rpcclient"
+	"github.com/picfight/pfcd/wire"
 	"github.com/picfight/pfcharness"
 	"github.com/picfight/pfcutil"
 	"runtime"
@@ -22,7 +23,7 @@ import (
 const (
 	// vbLegacyBlockVersion is the highest legacy block version before the
 	// version bits scheme became active.
-	vbLegacyBlockVersion = 4
+	vbLegacyBlockVersion = wire.DefaultBlockVersion
 
 	// vbTopBits defines the bits to set in the version to signal that the
 	// version bits scheme is being used.

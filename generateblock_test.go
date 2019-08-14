@@ -19,7 +19,7 @@ import (
 
 // BlockVersion is the default block version used when generating
 // blocks.
-const BlockVersion = 4
+const BlockVersion = wire.DefaultBlockVersion
 
 func TestGenerateAndSubmitBlock(t *testing.T) {
 	// Skip tests when running with -short
