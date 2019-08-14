@@ -88,8 +88,10 @@ func Setup() *SimpleTestSetup {
 	}
 
 	btcdEXE := &commandline.ExplicitExecutablePathString{
-		PathString: "pfcd",
+		//PathString: "pfcd",
+		PathString: filepath.Join(findPFCDFolder(), "pfcd.exe"),
 	}
+
 	setup.NodeFactory = &nodecls.ConsoleNodeFactory{
 		NodeExecutablePathProvider: btcdEXE,
 	}
@@ -193,7 +195,7 @@ func Setup() *SimpleTestSetup {
 }
 
 func findPFCDFolder() string {
-	path := fileops.Abs("../../../picfight/pfcd")
+	path := fileops.Abs("../../picfight/pfcd")
 	return path
 }
 
