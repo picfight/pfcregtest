@@ -108,12 +108,14 @@ func TestBIP0113Activation(t *testing.T) {
 	r := setup.NewInstance(t.Name()).(*coinharness.Harness)
 	defer setup.Dispose(r)
 
+	balance := r.Wallet.ConfirmedBalance()
+
 	// Create a fresh output for usage within the test below.
-	const outputValue = pfcutil.SatoshiPerPicfightcoin
+	const outputValue = pfcutil.SatoshiPerPicfightcoin * 0.1
 	outputKey, testOutput, testPkScript, err := makeTestOutput(r, t,
 		outputValue)
 	if err != nil {
-		t.Fatalf("unable to create test output: %v", err)
+		t.Fatalf("unable to create test output: %v, confirmed balance: %v", err, balance)
 	}
 
 	// Fetch a fresh address from the harness, we'll use this address to
@@ -429,7 +431,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	}
 
 	const (
-		outputAmt         = pfcutil.SatoshiPerPicfightcoin
+		outputAmt         = pfcutil.SatoshiPerPicfightcoin / 10
 		relativeBlockLock = 10
 	)
 
