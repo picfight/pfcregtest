@@ -63,7 +63,7 @@ func TestSendOutputs(t *testing.T) {
 		return txid.(*chainhash.Hash)
 	}
 
-	assertTxMined := func(txid *chainhash.Hash, blockHash *chainhash.Hash) {
+	assertTxMined := func(txid *chainhash.Hash, blockHash *chainhash.Hash) []*wire.MsgTx {
 		block, err := r.NodeRPCClient().(*rpcclient.Client).GetBlock(blockHash)
 		if err != nil {
 			t.Fatalf("unable to get block: %v", err)
@@ -80,11 +80,12 @@ func TestSendOutputs(t *testing.T) {
 		if txHash != *txid {
 			t.Fatalf("txid's don't match, %v vs %v", txHash, txid)
 		}
+		return block.Transactions
 	}
 
 	// First, generate a small spend which will require only a single
 	// input.
-	txid := genSpend(pfcutil.Amount(5 * pfcutil.SatoshiPerPicfightcoin))
+	txid := genSpend(pfcutil.Amount(0.05 * pfcutil.SatoshiPerPicfightcoin))
 
 	// Generate a single block, the transaction the wallet created should
 	// be found in this block.
@@ -92,11 +93,15 @@ func TestSendOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to generate single block: %v", err)
 	}
-	assertTxMined(txid, blockHashes[0])
+	transactions := assertTxMined(txid, blockHashes[0])
+
+	if len(transactions[1].TxIn) > 1 {
+		t.Fatalf("Expected one consumed input, not %v", len(transactions[1].TxIn))
+	}
 
 	// Next, generate a spend much greater than the block reward. This
 	// transaction should also have been mined properly.
-	txid = genSpend(pfcutil.Amount(500 * pfcutil.SatoshiPerPicfightcoin))
+	txid = genSpend(pfcutil.Amount(5 * pfcutil.SatoshiPerPicfightcoin))
 	blockHashes, err = r.NodeRPCClient().(*rpcclient.Client).Generate(1)
 	if err != nil {
 		t.Fatalf("unable to generate single block: %v", err)
