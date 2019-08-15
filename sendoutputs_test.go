@@ -22,8 +22,7 @@ func TestBallance(t *testing.T) {
 	}
 	r := ObtainHarness(t.Name() + ".8")
 
-	expectedBalance := pfcutil.Amount(
-		int64(testSetup.Regnet25.NumMatureOutputs) * 50 * pfcutil.SatoshiPerPicfightcoin)
+	expectedBalance := pfcutil.Amount(16.81578825 * pfcutil.SatoshiPerPicfightcoin)
 	actualBalance := r.Wallet.ConfirmedBalance()
 
 	if actualBalance != expectedBalance {
