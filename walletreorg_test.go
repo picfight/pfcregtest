@@ -24,8 +24,8 @@ func TestMemWalletReorg(t *testing.T) {
 	defer testSetup.Regnet5.Dispose(h)
 	h.Wallet.Sync()
 
-	// The internal wallet of this h should now have 250 PFC.
-	expectedBalance := pfcutil.Amount(250 * pfcutil.SatoshiPerPicfightcoin)
+	// The internal wallet of this h should now have 3.3631591 PFC.
+	expectedBalance := pfcutil.Amount(3.3631591 * pfcutil.SatoshiPerPicfightcoin)
 	walletBalance := h.Wallet.ConfirmedBalance()
 	if expectedBalance != walletBalance {
 		t.Fatalf("wallet balance incorrect: expected %v, got %v",
