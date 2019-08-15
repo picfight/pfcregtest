@@ -49,7 +49,7 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	output := &wire.TxOut{PkScript: selfAddrScript, Value: 1e8}
+	output := &wire.TxOut{PkScript: selfAddrScript, Value: int64(amt)}
 
 	// Next, create and broadcast a transaction paying to the output.
 	ctargs := &coinharness.CreateTransactionArgs{
