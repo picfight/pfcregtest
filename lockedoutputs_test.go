@@ -31,7 +31,7 @@ func TestMemWalletLockedOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	outputAmt := pfcutil.Amount(50 * pfcutil.SatoshiPerPicfightcoin)
+	outputAmt := pfcutil.Amount(startingBalance / 4)
 	output := wire.NewTxOut(int64(outputAmt), pkScript)
 	ctargs := &coinharness.CreateTransactionArgs{
 		Outputs: []coinharness.OutputTx{output},
