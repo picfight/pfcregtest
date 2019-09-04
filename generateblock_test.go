@@ -43,7 +43,7 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 	txns := make([]*pfcutil.Tx, 0, numTxns)
 	for i := 0; i < numTxns; i++ {
 		ctargs := &coinharness.CreateTransactionArgs{
-			Outputs: []coinharness.OutputTx{output},
+			Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 			FeeRate: 10,
 			Change:  true,
 		}
@@ -52,7 +52,7 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 			t.Fatalf("unable to create tx: %v", err)
 		}
 
-		txns = append(txns, pfcutil.NewTx(tx.(*wire.MsgTx)))
+		txns = append(txns, pfcutil.NewTx(pfcharness.TransactionTxToRaw(tx)))
 	}
 
 	// Now generate a block with the default block version, and a zero'd

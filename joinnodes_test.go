@@ -7,6 +7,7 @@ package pfcregtest
 import (
 	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/rpcclient"
+	"github.com/picfight/pfcharness"
 	"github.com/picfight/pfcutil"
 	"testing"
 	"time"
@@ -108,7 +109,7 @@ func checkJoinMempools(t *testing.T) {
 	}
 	output := wire.NewTxOut(5e8, addrScript)
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{output},
+		Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 		FeeRate: 10,
 		Change:  true,
 	}
@@ -116,7 +117,7 @@ func checkJoinMempools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("coinbase spend failed: %v", err)
 	}
-	if _, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(testTx.(*wire.MsgTx), true); err != nil {
+	if _, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(testTx), true); err != nil {
 		t.Fatalf("send transaction failed: %v", err)
 	}
 
@@ -168,7 +169,7 @@ func checkJoinMempools(t *testing.T) {
 
 	// Send the transaction to the local harness which will result in synced
 	// mempools.
-	if _, err := h.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(testTx.(*wire.MsgTx), true); err != nil {
+	if _, err := h.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(testTx), true); err != nil {
 		t.Fatalf("send transaction failed: %v", err)
 	}
 

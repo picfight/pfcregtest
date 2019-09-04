@@ -6,6 +6,7 @@ package pfcregtest
 
 import (
 	"github.com/jfixby/coinharness"
+	"github.com/picfight/pfcharness"
 	"github.com/picfight/pfcutil"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestMemWalletLockedOutputs(t *testing.T) {
 	outputAmt := pfcutil.Amount(startingBalance / 4)
 	output := wire.NewTxOut(int64(outputAmt), pkScript)
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{output},
+		Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 		FeeRate: 10,
 		Change:  true,
 	}
@@ -54,7 +55,7 @@ func TestMemWalletLockedOutputs(t *testing.T) {
 	// Now unlocked all the spent inputs within the unbroadcast signed
 	// transaction. The current balance should now be exactly that of the
 	// starting balance.
-	txin := tx.(*wire.MsgTx).TxIn
+	txin := tx.TxIn()
 	inpts := make([]coinharness.InputTx, len(txin))
 	for i, j := range txin {
 		inpts[i] = j

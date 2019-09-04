@@ -53,7 +53,7 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 
 	// Next, create and broadcast a transaction paying to the output.
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs:   []coinharness.OutputTx{output},
+		Outputs:   []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 		FeeRate:   10,
 		Change:    true,
 		TxVersion: wire.TxVersion,
@@ -62,7 +62,7 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	txHash, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(fundTx.(*wire.MsgTx), true)
+	txHash, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(fundTx), true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -79,14 +79,14 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 	// generated above, this is needed in order to create a proper utxo for
 	// this output.
 	var outputIndex uint32
-	if bytes.Equal(fundTx.(*wire.MsgTx).TxOut[0].PkScript, selfAddrScript) {
+	if bytes.Equal(fundTx.TxOut()[0].PkScript(), selfAddrScript) {
 		outputIndex = 0
 	} else {
 		outputIndex = 1
 	}
 
 	utxo := &wire.OutPoint{
-		Hash:  fundTx.(*wire.MsgTx).TxHash(),
+		Hash:  fundTx.TxHash().(chainhash.Hash),
 		Index: outputIndex,
 	}
 
@@ -324,7 +324,7 @@ func createCSVOutput(r *coinharness.Harness, t *testing.T,
 	// Finally create a valid transaction which creates the output crafted
 	// above.
 	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs:   []coinharness.OutputTx{output},
+		Outputs:   []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 		FeeRate:   10,
 		Change:    true,
 		TxVersion: wire.TxVersion,
@@ -335,16 +335,16 @@ func createCSVOutput(r *coinharness.Harness, t *testing.T,
 	}
 
 	var outputIndex uint32
-	if !bytes.Equal(tx.(*wire.MsgTx).TxOut[0].PkScript, p2shScript) {
+	if !bytes.Equal(tx.TxOut()[0].PkScript(), p2shScript) {
 		outputIndex = 1
 	}
 
 	utxo := &wire.OutPoint{
-		Hash:  tx.(*wire.MsgTx).TxHash(),
+		Hash:  tx.TxHash().(chainhash.Hash),
 		Index: outputIndex,
 	}
 
-	return csvScript, utxo, tx.(*wire.MsgTx), nil
+	return csvScript, utxo, pfcharness.TransactionTxToRaw(tx), nil
 }
 
 // spendCSVOutput spends an output previously created by the createCSVOutput

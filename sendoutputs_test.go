@@ -7,6 +7,7 @@ package pfcregtest
 import (
 	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/rpcclient"
+	"github.com/picfight/pfcharness"
 	"testing"
 
 	"github.com/picfight/pfcd/chaincfg/chainhash"
@@ -53,7 +54,7 @@ func TestSendOutputs(t *testing.T) {
 		}
 		output := wire.NewTxOut(int64(amt), addrScript)
 		sendArgs := &coinharness.SendOutputsArgs{
-			Outputs: []coinharness.OutputTx{output},
+			Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
 			FeeRate: 10,
 		}
 		txid, err := r.Wallet.SendOutputs(sendArgs)
