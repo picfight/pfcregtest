@@ -62,18 +62,18 @@ func makeTestOutput(r *coinharness.Harness, t *testing.T,
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	txHash, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(fundTx), true)
+	txHash, err := r.NodeRPCClient().SendRawTransaction((fundTx), true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// The transaction created above should be included within the next
 	// generated block.
-	blockHash, err := r.NodeRPCClient().(*rpcclient.Client).Generate(1)
+	blockHash, err := r.NodeRPCClient().Generate(1)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	assertTxInBlock(r, t, blockHash[0], txHash)
+	assertTxInBlock(r, t, blockHash[0].(*chainhash.Hash), txHash.(*chainhash.Hash))
 
 	// Locate the output index of the coins spendable by the key we
 	// generated above, this is needed in order to create a proper utxo for
@@ -143,7 +143,7 @@ func TestBIP0113Activation(t *testing.T) {
 
 	// We set the lock-time of the transaction to just one minute after the
 	// current MTP of the chain.
-	chainInfo, err := r.NodeRPCClient().(*rpcclient.Client).GetBlockChainInfo()
+	chainInfo, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlockChainInfo()
 	if err != nil {
 		t.Fatalf("unable to query for chain info: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestBIP0113Activation(t *testing.T) {
 	// This transaction should be rejected from the mempool as using MTP
 	// for transactions finality is now a policy rule. Additionally, the
 	// exact error should be the rejection of a non-final transaction.
-	_, err = r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(tx, true)
+	_, err = r.NodeRPCClient().Internal().(*rpcclient.Client).SendRawTransaction(tx, true)
 	if err == nil {
 		t.Fatalf("transaction accepted, but should be non-final")
 	} else if !strings.Contains(err.Error(), "not finalized") {
@@ -176,7 +176,7 @@ func TestBIP0113Activation(t *testing.T) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err == nil {
 			t.Fatalf("Block should be rejected: %v", block)
 		}
@@ -199,7 +199,7 @@ func TestBIP0113Activation(t *testing.T) {
 	// height 299. The getblockchaininfo call checks the state for the
 	// block AFTER the current height.
 	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 4 + 1
-	if _, err := r.NodeRPCClient().(*rpcclient.Client).Generate(numBlocks); err != nil {
+	if _, err := r.NodeRPCClient().Generate(numBlocks); err != nil {
 		t.Fatalf("unable to generate blocks: %v", err)
 	}
 
@@ -218,7 +218,7 @@ func TestBIP0113Activation(t *testing.T) {
 	// rejected.
 	timeLockDeltas := []int64{-1, 0, 1}
 	for _, timeLockDelta := range timeLockDeltas {
-		chainInfo, err = r.NodeRPCClient().(*rpcclient.Client).GetBlockChainInfo()
+		chainInfo, err = r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlockChainInfo()
 		if err != nil {
 			t.Fatalf("unable to query for chain info: %v", err)
 		}
@@ -255,7 +255,7 @@ func TestBIP0113Activation(t *testing.T) {
 		// accepted as it has a lock-time of one
 		// second _before_ the current MTP.
 
-		_, err = r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(tx, true)
+		_, err = r.NodeRPCClient().Internal().(*rpcclient.Client).SendRawTransaction(tx, true)
 		if err == nil && timeLockDelta >= 0 {
 			t.Fatal("transaction was accepted into the mempool " +
 				"but should be rejected!")
@@ -273,7 +273,7 @@ func TestBIP0113Activation(t *testing.T) {
 				MiningAddress: r.MiningAddress.(pfcutil.Address),
 				Network:       r.Node.Network().(*chaincfg.Params),
 			}
-			_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+			_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 			if err == nil && timeLockDelta >= 0 {
 				t.Fatal("block should be rejected due to non-final " +
 					"txn, but was accepted")
@@ -289,7 +289,7 @@ func TestBIP0113Activation(t *testing.T) {
 // pkScript with the specified time-lock.
 func createCSVOutput(r *coinharness.Harness, t *testing.T,
 	numSatoshis pfcutil.Amount, timeLock int32,
-	isSeconds bool) ([]byte, *wire.OutPoint, *wire.MsgTx, error) {
+	isSeconds bool) ([]byte, *wire.OutPoint, coinharness.CreatedTransactionTx, error) {
 
 	// Convert the time-lock to the proper sequence lock based according to
 	// if the lock is seconds or time based.
@@ -344,7 +344,7 @@ func createCSVOutput(r *coinharness.Harness, t *testing.T,
 		Index: outputIndex,
 	}
 
-	return csvScript, utxo, pfcharness.TransactionTxToRaw(tx), nil
+	return csvScript, utxo, tx, nil
 }
 
 // spendCSVOutput spends an output previously created by the createCSVOutput
@@ -377,9 +377,9 @@ func spendCSVOutput(redeemScript []byte, csvUTXO *wire.OutPoint,
 // assertTxInBlock asserts a transaction with the specified txid is found
 // within the block with the passed block hash.
 func assertTxInBlock(r *coinharness.Harness, t *testing.T, blockHash *chainhash.Hash,
-	txid *chainhash.Hash) {
+	txid coinharness.Hash) {
 
-	block, err := r.NodeRPCClient().(*rpcclient.Client).GetBlock(blockHash)
+	block, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlock(blockHash)
 	if err != nil {
 		t.Fatalf("unable to get block: %v", err)
 	}
@@ -454,15 +454,15 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 
 		// As the transaction is p2sh it should be accepted into the
 		// mempool and found within the next generated block.
-		if _, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(tx, true); err != nil {
+		if _, err := r.NodeRPCClient().SendRawTransaction(tx, true); err != nil {
 			t.Fatalf("unable to broadcast tx: %v", err)
 		}
-		blocks, err := r.NodeRPCClient().(*rpcclient.Client).Generate(1)
+		blocks, err := r.NodeRPCClient().Generate(1)
 		if err != nil {
 			t.Fatalf("unable to generate blocks: %v", err)
 		}
 		txid := tx.TxHash()
-		assertTxInBlock(r, t, blocks[0], &txid)
+		assertTxInBlock(r, t, blocks[0].(*chainhash.Hash), txid)
 
 		// Generate a custom transaction which spends the CSV output.
 		sequenceNum := blockchain.LockTimeToSequence(false, 10)
@@ -474,7 +474,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 
 		// This transaction should be rejected from the mempool since
 		// CSV validation is already mempool policy pre-fork.
-		_, err = r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(spendingTx, true)
+		_, err = r.NodeRPCClient().Internal().(*rpcclient.Client).SendRawTransaction(spendingTx, true)
 		if err == nil {
 			t.Fatalf("transaction should have been rejected, but was " +
 				"instead accepted")
@@ -489,7 +489,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err == nil {
 			t.Fatalf("Block should be rejected: %v", block)
 		}
@@ -506,7 +506,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	// height 299. The getblockchaininfo call checks the state for the
 	// block AFTER the current height.
 	numBlocks := (r.Node.Network().(*chaincfg.Params).MinerConfirmationWindow * 2) - 8 + 2
-	if _, err := r.NodeRPCClient().(*rpcclient.Client).Generate(numBlocks); err != nil {
+	if _, err := r.NodeRPCClient().Generate(numBlocks); err != nil {
 		t.Fatalf("unable to generate blocks: %v", err)
 	}
 
@@ -540,7 +540,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 			t.Fatalf("unable to create CSV output: %v", err)
 		}
 
-		if _, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(tx, true); err != nil {
+		if _, err := r.NodeRPCClient().SendRawTransaction(tx, true); err != nil {
 			t.Fatalf("unable to broadcast transaction: %v", err)
 		}
 
@@ -552,17 +552,17 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	}
 
 	// Mine a single block including all the transactions generated above.
-	if _, err := r.NodeRPCClient().(*rpcclient.Client).Generate(1); err != nil {
+	if _, err := r.NodeRPCClient().Generate(1); err != nil {
 		t.Fatalf("unable to generate block: %v", err)
 	}
 
 	// Now mine 10 additional blocks giving the inputs generated above a
 	// age of 11. Space out each block 10 minutes after the previous block.
-	prevBlockHash, err := r.NodeRPCClient().(*rpcclient.Client).GetBestBlockHash()
+	prevBlockHash, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBestBlockHash()
 	if err != nil {
 		t.Fatalf("unable to get prior block hash: %v", err)
 	}
-	prevBlock, err := r.NodeRPCClient().(*rpcclient.Client).GetBlock(prevBlockHash)
+	prevBlock, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlock(prevBlockHash)
 	if err != nil {
 		t.Fatalf("unable to get block: %v", err)
 	}
@@ -574,7 +574,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		b, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		b, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("unable to generate block: %v", err)
 		}
@@ -668,7 +668,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		txid, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(test.tx, true)
+		txid, err := r.NodeRPCClient().Internal().(*rpcclient.Client).SendRawTransaction(test.tx, true)
 		switch {
 		// Test case passes, nothing further to report.
 		case test.accept && err == nil:
@@ -699,7 +699,7 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 				MiningAddress: r.MiningAddress.(pfcutil.Address),
 				Network:       r.Node.Network().(*chaincfg.Params),
 			}
-			_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+			_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 			if err == nil {
 				t.Fatalf("test #%d, invalid block accepted", i)
 			}
@@ -709,10 +709,10 @@ func TestBIP0068AndBIP0112Activation(t *testing.T) {
 
 		// Generate a block, the transaction should be included within
 		// the newly mined block.
-		blockHashes, err := r.NodeRPCClient().(*rpcclient.Client).Generate(1)
+		blockHashes, err := r.NodeRPCClient().Generate(1)
 		if err != nil {
 			t.Fatalf("unable to mine block: %v", err)
 		}
-		assertTxInBlock(r, t, blockHashes[0], txid)
+		assertTxInBlock(r, t, blockHashes[0].(*chainhash.Hash), txid)
 	}
 }

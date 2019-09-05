@@ -15,7 +15,7 @@ func TestBuildVerstion(t *testing.T) {
 	r := pool.NewInstance(t.Name()).(*coinharness.Harness)
 	defer pool.Dispose(r)
 	// Create a new block connecting to the current tip.
-	version, err := r.NodeRPCClient().(*rpcclient.Client).GetBuildVersion()
+	version, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBuildVersion()
 	if err != nil {
 		t.Fatalf("Unable to get build vesion: %v", err)
 	}

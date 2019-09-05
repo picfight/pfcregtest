@@ -36,7 +36,7 @@ func checkJoinBlocks(t *testing.T) {
 	nodeSlice := []*coinharness.Harness{r, h}
 	blocksSynced := make(chan struct{})
 	go func() {
-		if err := JoinNodes(nodeSlice, Blocks); err != nil {
+		if err := coinharness.JoinNodes(nodeSlice, coinharness.Blocks); err != nil {
 			t.Fatalf("unable to join node on blocks: %v", err)
 		}
 		blocksSynced <- struct{}{}
@@ -52,7 +52,7 @@ func checkJoinBlocks(t *testing.T) {
 
 	// Connect the local harness to the main harness which will sync the
 	// chains.
-	if err := ConnectNode(h, r); err != nil {
+	if err := coinharness.ConnectNode(h, r, rpcclient.ANAdd); err != nil {
 		t.Fatalf("unable to connect harnesses: %v", err)
 	}
 
@@ -77,7 +77,7 @@ func checkJoinMempools(t *testing.T) {
 	r := ObtainHarness(mainHarnessName)
 
 	// Assert main test harness has no transactions in its mempool.
-	pooledHashes, err := r.NodeRPCClient().(*rpcclient.Client).GetRawMempool()
+	pooledHashes, err := r.NodeRPCClient().GetRawMempool()
 	if err != nil {
 		t.Fatalf("unable to get mempool for main test harness: %v", err)
 	}
@@ -96,7 +96,7 @@ func checkJoinMempools(t *testing.T) {
 
 	// Both mempools should be considered synced as they are empty.
 	// Therefore, this should return instantly.
-	if err := JoinNodes(nodeSlice, Mempools); err != nil {
+	if err := coinharness.JoinNodes(nodeSlice, coinharness.Mempools); err != nil {
 		t.Fatalf("unable to join node on mempools: %v", err)
 	}
 
@@ -117,7 +117,7 @@ func checkJoinMempools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("coinbase spend failed: %v", err)
 	}
-	if _, err := r.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(testTx), true); err != nil {
+	if _, err := r.NodeRPCClient().SendRawTransaction(testTx, true); err != nil {
 		t.Fatalf("send transaction failed: %v", err)
 	}
 
@@ -126,7 +126,7 @@ func checkJoinMempools(t *testing.T) {
 	harnessSynced := make(chan struct{})
 	go func() {
 		for {
-			poolHashes, err := r.NodeRPCClient().(*rpcclient.Client).GetRawMempool()
+			poolHashes, err := r.NodeRPCClient().GetRawMempool()
 			if err != nil {
 				t.Fatalf("failed to retrieve harness mempool: %v", err)
 			}
@@ -147,7 +147,7 @@ func checkJoinMempools(t *testing.T) {
 	// should be blocked on the JoinNodes call.
 	poolsSynced := make(chan struct{})
 	go func() {
-		if err := JoinNodes(nodeSlice, Mempools); err != nil {
+		if err := coinharness.JoinNodes(nodeSlice, coinharness.Mempools); err != nil {
 			t.Fatalf("unable to join node on mempools: %v", err)
 		}
 		poolsSynced <- struct{}{}
@@ -160,16 +160,16 @@ func checkJoinMempools(t *testing.T) {
 
 	// Establish an outbound connection from the local harness to the main
 	// harness and wait for the chains to be synced.
-	if err := ConnectNode(h, r); err != nil {
+	if err := coinharness.ConnectNode(h, r, rpcclient.ANAdd); err != nil {
 		t.Fatalf("unable to connect harnesses: %v", err)
 	}
-	if err := JoinNodes(nodeSlice, Blocks); err != nil {
+	if err := coinharness.JoinNodes(nodeSlice, coinharness.Blocks); err != nil {
 		t.Fatalf("unable to join node on blocks: %v", err)
 	}
 
 	// Send the transaction to the local harness which will result in synced
 	// mempools.
-	if _, err := h.NodeRPCClient().(*rpcclient.Client).SendRawTransaction(pfcharness.TransactionTxToRaw(testTx), true); err != nil {
+	if _, err := h.NodeRPCClient().SendRawTransaction((testTx), true); err != nil {
 		t.Fatalf("send transaction failed: %v", err)
 	}
 

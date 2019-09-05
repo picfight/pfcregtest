@@ -6,6 +6,7 @@ package pfcregtest
 
 import (
 	"github.com/jfixby/coinharness"
+	"github.com/picfight/pfcd/rpcclient"
 	"testing"
 
 	"github.com/picfight/pfcutil"
@@ -34,11 +35,11 @@ func TestMemWalletReorg(t *testing.T) {
 
 	// Now connect this local h to the main h then wait for
 	// their chains to synchronize.
-	if err := ConnectNode(h, r); err != nil {
+	if err := coinharness.ConnectNode(h, r, rpcclient.ANAdd); err != nil {
 		t.Fatalf("unable to connect harnesses: %v", err)
 	}
 	nodeSlice := []*coinharness.Harness{r, h}
-	if err := JoinNodes(nodeSlice, Blocks); err != nil {
+	if err := coinharness.JoinNodes(nodeSlice, coinharness.Blocks); err != nil {
 		t.Fatalf("unable to join node on blocks: %v", err)
 	}
 

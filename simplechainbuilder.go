@@ -63,7 +63,7 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 	{
 		if testSetup.NumMatureOutputs > 0 {
 			numToGenerate := uint32(testSetup.ActiveNet.CoinbaseMaturity) + testSetup.NumMatureOutputs
-			err := generateTestChain(numToGenerate, h.NodeRPCClient().(*rpcclient.Client))
+			err := generateTestChain(numToGenerate, h.NodeRPCClient().Internal().(*rpcclient.Client))
 			pin.CheckTestSetupMalfunction(err)
 		}
 		// wait for the WalletTestServer to sync up to the current height

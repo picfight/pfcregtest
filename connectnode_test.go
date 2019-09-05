@@ -6,6 +6,7 @@ package pfcregtest
 
 import (
 	"github.com/jfixby/coinharness"
+	"github.com/picfight/pfcd/rpcclient"
 	"testing"
 )
 
@@ -22,11 +23,11 @@ func TestConnectNode(t *testing.T) {
 
 	// Establish a p2p connection from our new local harness to the main
 	// harness.
-	if err := ConnectNode(harness, r); err != nil {
+	if err := coinharness.ConnectNode(harness, r, rpcclient.ANAdd); err != nil {
 		t.Fatalf("unable to connect local to main harness: %v", err)
 	}
 
 	// The main harness should show up in our local harness' peer's list,
 	// and vice verse.
-	assertConnectedTo(t, harness, r)
+	coinharness.AssertConnectedTo(t, harness, r)
 }

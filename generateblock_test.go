@@ -7,7 +7,6 @@ package pfcregtest
 import (
 	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/chaincfg"
-	"github.com/picfight/pfcd/rpcclient"
 	"github.com/picfight/pfcharness"
 	"testing"
 	"time"
@@ -65,7 +64,7 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 		MiningAddress: r.MiningAddress.(pfcutil.Address),
 		Network:       r.Node.Network().(*chaincfg.Params),
 	}
-	block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &newBlockArgs)
+	block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &newBlockArgs)
 	if err != nil {
 		t.Fatalf("unable to generate block: %v", err)
 	}
@@ -94,7 +93,7 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 		MiningAddress: r.MiningAddress.(pfcutil.Address),
 		Network:       r.Node.Network().(*chaincfg.Params),
 	}
-	block, err = pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &newBlockArgs2)
+	block, err = pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &newBlockArgs2)
 	if err != nil {
 		t.Fatalf("unable to generate block: %v", err)
 	}

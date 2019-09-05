@@ -34,7 +34,7 @@ const (
 // ensures its version either has the provided bit set or unset per the set
 // flag.
 func assertVersionBit(r *coinharness.Harness, t *testing.T, hash *chainhash.Hash, bit uint8, set bool) {
-	block, err := r.NodeRPCClient().(*rpcclient.Client).GetBlock(hash)
+	block, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlock(hash)
 	if err != nil {
 		t.Fatalf("failed to retrieve block %v: %v", hash, err)
 	}
@@ -54,7 +54,7 @@ func assertVersionBit(r *coinharness.Harness, t *testing.T, hash *chainhash.Hash
 // assertChainHeight retrieves the current chain height from the given test
 // harness and ensures it matches the provided expected height.
 func assertChainHeight(r *coinharness.Harness, t *testing.T, expectedHeight uint32) {
-	height, err := r.NodeRPCClient().(*rpcclient.Client).GetBlockCount()
+	height, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlockCount()
 	if err != nil {
 		t.Fatalf("failed to retrieve block height: %v", err)
 	}
@@ -97,7 +97,7 @@ func assertSoftForkStatus(r *coinharness.Harness, t *testing.T, forkKey string, 
 			"threshold state %v to string", line, state)
 	}
 
-	info, err := r.NodeRPCClient().(*rpcclient.Client).GetBlockChainInfo()
+	info, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBlockChainInfo()
 	if err != nil {
 		t.Fatalf("failed to retrieve chain info: %v", err)
 	}
@@ -161,7 +161,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -181,7 +181,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 		MiningAddress: r.MiningAddress.(pfcutil.Address),
 		Network:       r.Node.Network().(*chaincfg.Params),
 	}
-	_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+	_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 	if err != nil {
 		t.Fatalf("failed to generated block: %v", err)
 	}
@@ -210,7 +210,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -222,7 +222,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -245,7 +245,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -257,7 +257,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -280,7 +280,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block %d: %v", i, err)
 		}
@@ -302,7 +302,7 @@ func testBIP0009(t *testing.T, forkKey string, deploymentID uint32) {
 			MiningAddress: r.MiningAddress.(pfcutil.Address),
 			Network:       r.Node.Network().(*chaincfg.Params),
 		}
-		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient().(*rpcclient.Client), &args)
+		_, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &args)
 		if err != nil {
 			t.Fatalf("failed to generated block: %v", err)
 		}
@@ -373,12 +373,12 @@ func TestBIP0009Mining(t *testing.T) {
 	net := r.Node.Network()
 	deployment := &net.(*chaincfg.Params).Deployments[chaincfg.DeploymentTestDummy]
 	testDummyBitNum := deployment.BitNumber
-	hashes, err := r.NodeRPCClient().(*rpcclient.Client).Generate(1)
+	hashes, err := r.NodeRPCClient().Generate(1)
 	if err != nil {
 		t.Fatalf("unable to generate blocks: %v", err)
 	}
 	assertChainHeight(r, t, 1)
-	assertVersionBit(r, t, hashes[0], testDummyBitNum, false)
+	assertVersionBit(r, t, hashes[0].(*chainhash.Hash), testDummyBitNum, false)
 
 	// *** ThresholdStarted ***
 	//
@@ -392,13 +392,13 @@ func TestBIP0009Mining(t *testing.T) {
 	// dummy deployment as started.
 	confirmationWindow := net.(*chaincfg.Params).MinerConfirmationWindow
 	numNeeded := confirmationWindow - 1
-	hashes, err = r.NodeRPCClient().(*rpcclient.Client).Generate(numNeeded)
+	hashes, err = r.NodeRPCClient().Generate(numNeeded)
 	if err != nil {
 		t.Fatalf("failed to generated %d blocks: %v", numNeeded, err)
 	}
 	assertChainHeight(r, t, confirmationWindow)
-	assertVersionBit(r, t, hashes[len(hashes)-2], testDummyBitNum, false)
-	assertVersionBit(r, t, hashes[len(hashes)-1], testDummyBitNum, true)
+	assertVersionBit(r, t, hashes[len(hashes)-2].(*chainhash.Hash), testDummyBitNum, false)
+	assertVersionBit(r, t, hashes[len(hashes)-1].(*chainhash.Hash), testDummyBitNum, true)
 
 	// *** ThresholdLockedIn ***
 	//
@@ -407,13 +407,13 @@ func TestBIP0009Mining(t *testing.T) {
 	// The last generated block should still have the test bit set in the
 	// version since the pfcd mining code will have recognized the test
 	// dummy deployment as locked in.
-	hashes, err = r.NodeRPCClient().(*rpcclient.Client).Generate(confirmationWindow)
+	hashes, err = r.NodeRPCClient().Generate(confirmationWindow)
 	if err != nil {
 		t.Fatalf("failed to generated %d blocks: %v", confirmationWindow,
 			err)
 	}
 	assertChainHeight(r, t, confirmationWindow*2)
-	assertVersionBit(r, t, hashes[len(hashes)-1], testDummyBitNum, true)
+	assertVersionBit(r, t, hashes[len(hashes)-1].(*chainhash.Hash), testDummyBitNum, true)
 
 	// *** ThresholdActivated ***
 	//
@@ -426,12 +426,12 @@ func TestBIP0009Mining(t *testing.T) {
 	// version since the pfcd mining code will have recognized the test
 	// dummy deployment as activated and thus there is no longer any need
 	// to set the bit.
-	hashes, err = r.NodeRPCClient().(*rpcclient.Client).Generate(confirmationWindow)
+	hashes, err = r.NodeRPCClient().Generate(confirmationWindow)
 	if err != nil {
 		t.Fatalf("failed to generated %d blocks: %v", confirmationWindow,
 			err)
 	}
 	assertChainHeight(r, t, confirmationWindow*3)
-	assertVersionBit(r, t, hashes[len(hashes)-2], testDummyBitNum, true)
-	assertVersionBit(r, t, hashes[len(hashes)-1], testDummyBitNum, false)
+	assertVersionBit(r, t, hashes[len(hashes)-2].(*chainhash.Hash), testDummyBitNum, true)
+	assertVersionBit(r, t, hashes[len(hashes)-1].(*chainhash.Hash), testDummyBitNum, false)
 }
