@@ -85,17 +85,19 @@ func launchHarnessSequence(h *coinharness.Harness, args *launchArguments) {
 	node := h.Node
 	wallet := h.Wallet
 
-	node.SetDebugNodeOutput(args.DebugNodeOutput)
 	node.SetMiningAddress(h.MiningAddress)
 	node.SetExtraArguments(args.NodeExtraArguments)
 
-	node.Start()
+	sargs := &coinharness.StartNodeArgs{
+		DebugOutput: args.DebugNodeOutput,
+	}
+	node.Start(sargs)
 
 	rpcConfig := node.RPCConnectionConfig()
 
 	walletLaunchArguments := &coinharness.TestWalletStartArgs{
 		NodeRPCCertFile:          node.CertFile(),
-		DebugWalletOutput:        args.DebugWalletOutput,
+		DebugOutput:              args.DebugWalletOutput,
 		MaxSecondsToWaitOnLaunch: 90,
 		NodeRPCConfig:            rpcConfig,
 	}
