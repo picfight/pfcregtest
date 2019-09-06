@@ -13,6 +13,7 @@ import (
 	"github.com/jfixby/pin/gobuilder"
 	"github.com/picfight/pfcharness/memwallet"
 	"github.com/picfight/pfcharness/nodecls"
+	"github.com/picfight/pfcharness/walletcls"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -87,11 +88,18 @@ func Setup() *SimpleTestSetup {
 		WorkingDir: pin.NewTempDir(setupWorkingDir(), "simpleregtest").MakeDir(),
 	}
 
-	btcdEXE := &commandline.ExplicitExecutablePathString{
+	wEXE := &commandline.ExplicitExecutablePathString{
+		PathString: "pfcwallet",
+	}
+	setup.WalletFactory = &walletcls.ConsoleWalletFactory{
+		WalletExecutablePathProvider: wEXE,
+	}
+
+	dEXE := &commandline.ExplicitExecutablePathString{
 		PathString: "pfcd",
 	}
 	setup.NodeFactory = &nodecls.ConsoleNodeFactory{
-		NodeExecutablePathProvider: btcdEXE,
+		NodeExecutablePathProvider: dEXE,
 	}
 
 	portManager := &LazyPortManager{
