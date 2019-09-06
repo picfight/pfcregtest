@@ -61,6 +61,8 @@ func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) 
 	seedSalt := extractSeedSaltFromHarnessName(harnessName)
 
 	harnessFolder := filepath.Join(testSetup.WorkingDir, harnessFolderName)
+	walletFolder := filepath.Join(harnessFolder, "wallet")
+	nodeFolder := filepath.Join(harnessFolder, "node")
 
 	p2p := testSetup.NetPortManager.ObtainPort()
 	nodeRPC := testSetup.NetPortManager.ObtainPort()
@@ -77,14 +79,19 @@ func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) 
 
 		ActiveNet: testSetup.ActiveNet,
 
-		WorkingDir: harnessFolder,
+		WorkingDir: nodeFolder,
 	}
 
 	walletConfig := &coinharness.TestWalletConfig{
-		Seed:          pfcharness.NewTestSeed(seedSalt),
+		Seed:        pfcharness.NewTestSeed(seedSalt),
+		NodeRPCHost: localhost,
+		NodeRPCPort: nodeRPC,
+
 		WalletRPCHost: localhost,
 		WalletRPCPort: walletRPC,
-		ActiveNet:     testSetup.ActiveNet,
+
+		ActiveNet:  testSetup.ActiveNet,
+		WorkingDir: walletFolder,
 	}
 
 	harness := &coinharness.Harness{
