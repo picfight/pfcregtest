@@ -74,10 +74,11 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 
 // local struct to bundle launchHarnessSequence function arguments
 type launchArguments struct {
-	DebugNodeOutput    bool
-	DebugWalletOutput  bool
-	MiningAddress      *pfcutil.Address
-	NodeExtraArguments map[string]interface{}
+	DebugNodeOutput      bool
+	DebugWalletOutput    bool
+	MiningAddress        *pfcutil.Address
+	NodeExtraArguments   map[string]interface{}
+	WalletExtraArguments map[string]interface{}
 }
 
 // launchHarnessSequence
@@ -85,11 +86,10 @@ func launchHarnessSequence(h *coinharness.Harness, args *launchArguments) {
 	node := h.Node
 	wallet := h.Wallet
 
-	node.SetMiningAddress(h.MiningAddress)
-	node.SetExtraArguments(args.NodeExtraArguments)
-
 	sargs := &coinharness.StartNodeArgs{
-		DebugOutput: args.DebugNodeOutput,
+		DebugOutput:    args.DebugNodeOutput,
+		MiningAddress:  h.MiningAddress,
+		ExtraArguments: args.NodeExtraArguments,
 	}
 	node.Start(sargs)
 
@@ -100,7 +100,9 @@ func launchHarnessSequence(h *coinharness.Harness, args *launchArguments) {
 		DebugOutput:              args.DebugWalletOutput,
 		MaxSecondsToWaitOnLaunch: 90,
 		NodeRPCConfig:            rpcConfig,
+		WalletExtraArguments:     args.WalletExtraArguments,
 	}
+
 	wallet.Start(walletLaunchArguments)
 
 }

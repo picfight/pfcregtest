@@ -13,7 +13,6 @@ import (
 	"github.com/jfixby/pin/gobuilder"
 	"github.com/picfight/pfcharness/memwallet"
 	"github.com/picfight/pfcharness/nodecls"
-	"github.com/picfight/pfcharness/walletcls"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -83,17 +82,19 @@ func (setup *SimpleTestSetup) TearDown() {
 // Setup deploys this test setup
 func Setup() *SimpleTestSetup {
 	setup := &SimpleTestSetup{
-		WalletFactory: &memwallet.WalletFactory{},
+		WalletFactory: &memwallet.MemWalletFactory{},
 		//Network:       &chaincfg.RegressionNetParams,
 		WorkingDir: pin.NewTempDir(setupWorkingDir(), "simpleregtest").MakeDir(),
 	}
 
-	wEXE := &commandline.ExplicitExecutablePathString{
-		PathString: "pfcwallet",
-	}
-	setup.WalletFactory = &walletcls.ConsoleWalletFactory{
-		WalletExecutablePathProvider: wEXE,
-	}
+	setup.WalletFactory = &memwallet.MemWalletFactory{}
+
+	//wEXE := &commandline.ExplicitExecutablePathString{
+	//	PathString: "pfcwallet",
+	//}
+	//setup.WalletFactory = &walletcls.ConsoleWalletFactory{
+	//	WalletExecutablePathProvider: wEXE,
+	//}
 
 	dEXE := &commandline.ExplicitExecutablePathString{
 		PathString: "pfcd",
