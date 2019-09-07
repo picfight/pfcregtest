@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/jfixby/coinharness"
 	"github.com/jfixby/pin"
+	"github.com/jfixby/pin/commandline"
+	"github.com/picfight/pfcd/chaincfg"
 	"github.com/picfight/pfcd/rpcclient"
 	"strconv"
 	"strings"
@@ -24,7 +26,9 @@ import (
 func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.Harness) {
 	pin.AssertNotEmpty("harness name", h.Name)
 	fmt.Println("Deploying Harness[" + h.Name + "]")
-
+	createFlag := true ||
+		h.Node.Network() == &chaincfg.SimNetParams ||
+		h.Node.Network() == &chaincfg.RegressionNetParams
 	// launch a fresh h (assumes h working dir is empty)
 	{
 		args := &launchArguments{
@@ -32,14 +36,30 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 			DebugWalletOutput:  testSetup.DebugWalletOutput,
 			NodeExtraArguments: testSetup.NodeStartExtraArguments,
 		}
+		if createFlag {
+			args.WalletExtraArguments = make(map[string]interface{})
+			args.WalletExtraArguments["createtemp"] = commandline.NoArgumentValue
+		}
 		launchHarnessSequence(h, args)
 	}
 
 	// Get a new address from the WalletTestServer
 	// to be set with node --miningaddr
+	var address coinharness.Address
+	var err error
 	{
-		address, err := h.Wallet.NewAddress(nil)
-		pin.CheckTestSetupMalfunction(err)
+		for {
+			address, err = h.Wallet.NewAddress(nil)
+			if err != nil {
+				pin.D("address", address)
+				pin.D("error", err)
+				pin.Sleep(1000)
+			} else {
+				break
+			}
+		}
+
+		//pin.CheckTestSetupMalfunction(err)
 		h.MiningAddress = address
 
 		pin.AssertNotNil("MiningAddress", h.MiningAddress)
@@ -56,6 +76,10 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 			DebugNodeOutput:    testSetup.DebugNodeOutput,
 			DebugWalletOutput:  testSetup.DebugWalletOutput,
 			NodeExtraArguments: testSetup.NodeStartExtraArguments,
+		}
+		if createFlag {
+			args.WalletExtraArguments = make(map[string]interface{})
+			args.WalletExtraArguments["createtemp"] = commandline.NoArgumentValue
 		}
 		launchHarnessSequence(h, args)
 	}
@@ -100,7 +124,7 @@ func launchHarnessSequence(h *coinharness.Harness, args *launchArguments) {
 		DebugOutput:              args.DebugWalletOutput,
 		MaxSecondsToWaitOnLaunch: 90,
 		NodeRPCConfig:            rpcConfig,
-		WalletExtraArguments:     args.WalletExtraArguments,
+		ExtraArguments:           args.WalletExtraArguments,
 	}
 
 	wallet.Start(walletLaunchArguments)

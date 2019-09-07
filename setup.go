@@ -6,13 +6,12 @@ package pfcregtest
 
 import (
 	"fmt"
-	"github.com/jfixby/coinharness"
 	"github.com/jfixby/pin"
 	"github.com/jfixby/pin/commandline"
-	"github.com/jfixby/pin/fileops"
 	"github.com/jfixby/pin/gobuilder"
 	"github.com/picfight/pfcharness/memwallet"
 	"github.com/picfight/pfcharness/nodecls"
+	"github.com/picfight/pfcharness/walletcls"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -60,12 +59,6 @@ type SimpleTestSetup struct {
 	// with only the genesis block.
 	Simnet0 *ChainWithMatureOutputsSpawner
 
-	// ConsoleNodeFactory produces a new TestNode instance upon request
-	NodeFactory coinharness.TestNodeFactory
-
-	// WalletFactory produces a new TestWallet instance upon request
-	WalletFactory coinharness.TestWalletFactory
-
 	// WorkingDir defines test setup working dir
 	WorkingDir *pin.TempDirHandler
 }
@@ -82,24 +75,26 @@ func (setup *SimpleTestSetup) TearDown() {
 // Setup deploys this test setup
 func Setup() *SimpleTestSetup {
 	setup := &SimpleTestSetup{
-		WalletFactory: &memwallet.MemWalletFactory{},
-		//Network:       &chaincfg.RegressionNetParams,
 		WorkingDir: pin.NewTempDir(setupWorkingDir(), "simpleregtest").MakeDir(),
 	}
 
-	setup.WalletFactory = &memwallet.MemWalletFactory{}
+	memWalletFactory := &memwallet.MemWalletFactory{}
 
-	//wEXE := &commandline.ExplicitExecutablePathString{
-	//	PathString: "pfcwallet",
-	//}
-	//setup.WalletFactory = &walletcls.ConsoleWalletFactory{
-	//	WalletExecutablePathProvider: wEXE,
-	//}
+	wEXE := &commandline.ExplicitExecutablePathString{
+		PathString: "pfcwallet",
+	}
+	consoleWalletFactory := &walletcls.ConsoleWalletFactory{
+		WalletExecutablePathProvider: wEXE,
+	}
+
+	regnetWalletFactory := memWalletFactory
+	mainnetWalletFactory := memWalletFactory
+	simnetWalletFactory := consoleWalletFactory
 
 	dEXE := &commandline.ExplicitExecutablePathString{
 		PathString: "pfcd",
 	}
-	setup.NodeFactory = &nodecls.ConsoleNodeFactory{
+	nodeFactory := &nodecls.ConsoleNodeFactory{
 		NodeExecutablePathProvider: dEXE,
 	}
 
@@ -116,8 +111,8 @@ func Setup() *SimpleTestSetup {
 		DebugWalletOutput: true,
 		NumMatureOutputs:  25,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     regnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.RegressionNetParams,
 	}
 
@@ -127,8 +122,8 @@ func Setup() *SimpleTestSetup {
 		DebugWalletOutput: true,
 		NumMatureOutputs:  0,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     mainnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.MainNetParams,
 	}
 
@@ -140,8 +135,8 @@ func Setup() *SimpleTestSetup {
 		DebugWalletOutput: true,
 		NumMatureOutputs:  5,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     regnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.RegressionNetParams,
 	}
 
@@ -151,8 +146,8 @@ func Setup() *SimpleTestSetup {
 		DebugWalletOutput: true,
 		NumMatureOutputs:  1,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     regnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.RegressionNetParams,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
@@ -165,8 +160,8 @@ func Setup() *SimpleTestSetup {
 		DebugWalletOutput: true,
 		NumMatureOutputs:  1,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     simnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.SimNetParams,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
@@ -176,34 +171,29 @@ func Setup() *SimpleTestSetup {
 	// Deploy harness spawner with empty test chain
 	setup.Regnet0 = &ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
-		DebugNodeOutput:   false,
-		DebugWalletOutput: false,
+		DebugNodeOutput:   true,
+		DebugWalletOutput: true,
 		NumMatureOutputs:  0,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     regnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.RegressionNetParams,
 	}
 	// Deploy harness spawner with empty test chain
 	setup.Simnet0 = &ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
-		DebugNodeOutput:   false,
-		DebugWalletOutput: false,
+		DebugNodeOutput:   true,
+		DebugWalletOutput: true,
 		NumMatureOutputs:  0,
 		NetPortManager:    portManager,
-		WalletFactory:     setup.WalletFactory,
-		NodeFactory:       setup.NodeFactory,
+		WalletFactory:     simnetWalletFactory,
+		NodeFactory:       nodeFactory,
 		ActiveNet:         &chaincfg.SimNetParams,
 	}
 
 	setup.harnessPool = pin.NewPool(setup.Regnet25)
 
 	return setup
-}
-
-func findPFCDFolder() string {
-	path := fileops.Abs("../../../picfight/pfcd")
-	return path
 }
 
 func setupWorkingDir() string {
