@@ -77,6 +77,9 @@ func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) 
 		NodeRPCHost: localhost,
 		NodeRPCPort: nodeRPC,
 
+		NodeUser:     "node.user",
+		NodePassword: "node.pass",
+
 		ActiveNet: testSetup.ActiveNet,
 
 		WorkingDir: nodeFolder,
@@ -90,6 +93,12 @@ func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) 
 		WalletRPCHost: localhost,
 		WalletRPCPort: walletRPC,
 
+		NodeUser:     "node.user",
+		NodePassword: "node.pass",
+
+		WalletUser:     "wallet.user",
+		WalletPassword: "wallet.pass",
+
 		ActiveNet:  testSetup.ActiveNet,
 		WorkingDir: walletFolder,
 	}
@@ -100,6 +109,8 @@ func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) 
 		Wallet:     testSetup.WalletFactory.NewWallet(walletConfig),
 		WorkingDir: harnessFolder,
 	}
+
+	pin.AssertTrue("Networks match", harness.Node.Network() == harness.Wallet.Network())
 
 	nodeNet := harness.Node.Network()
 	walletNet := harness.Wallet.Network()
