@@ -44,6 +44,8 @@ testrepo () {
 
   # run tests on all modules
 
+  export GO111MODULE=on
+
   pushd ../../
   git clone --depth=50 --branch=master https://github.com/picfight/pfcd.git picfight/pfcd
   git clone --depth=50 --branch=master https://github.com/picfight/pfcwallet.git picfight/pfcwallet
