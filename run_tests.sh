@@ -45,8 +45,8 @@ testrepo () {
   # run tests on all modules
 
   pushd ../../
-  git clone --depth=50 --branch=release-v1.4 https://github.com/picfight/pfcd.git picfight/pfcd
-  git clone --depth=50 --branch=release-v1.4 https://github.com/picfight/pfcwallet.git picfight/pfcwallet
+  git clone --depth=50 --branch=master https://github.com/picfight/pfcd.git picfight/pfcd
+  git clone --depth=50 --branch=master https://github.com/picfight/pfcwallet.git picfight/pfcwallet
   popd
 
   $GO fmt ./...
