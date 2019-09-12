@@ -1,4 +1,5 @@
 // Copyright (c) 2018 The btcsuite developers
+// Copyright (c) 2018 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -18,6 +19,11 @@ func ObtainHarness(tag string) *coinharness.Harness {
 	return s.(*coinharness.Harness)
 }
 
+func ObtainWalletHarness(tag string) *coinharness.Harness {
+	s := testSetup.harnessWalletPool.ObtainSpawnableConcurrentSafe(tag)
+	return s.(*coinharness.Harness)
+}
+
 var testSetup *SimpleTestSetup
 
 // TestMain is executed by go-test, and is
@@ -30,10 +36,18 @@ func TestMain(m *testing.M) {
 	if !testing.Short() {
 		// Initialize harnesses before running any tests
 		// otherwise they will be created on request.
-		tagsList := []string{
-			mainHarnessName,
+		{
+			tagsList := []string{
+				mainHarnessName,
+			}
+			testSetup.harnessPool.InitTags(tagsList)
 		}
-		testSetup.harnessPool.InitTags(tagsList)
+		{
+			tagsList := []string{
+				mainWalletHarnessName,
+			}
+			testSetup.harnessWalletPool.InitTags(tagsList)
+		}
 	}
 
 	// Run tests

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 The btcsuite developers
+// Copyright (c) 2018 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -29,7 +30,7 @@ type ChainWithMatureOutputsSpawner struct {
 	DebugWalletOutput bool
 
 	// NumMatureOutputs sets requirement for the generated test chain
-	NumMatureOutputs uint32
+	NumMatureOutputs int64
 
 	NodeFactory   coinharness.TestNodeFactory
 	WalletFactory coinharness.TestWalletFactory
@@ -43,10 +44,10 @@ type ChainWithMatureOutputsSpawner struct {
 }
 
 // NewInstance does the following:
-//   1. Starts a new DcrdTestServer process with a fresh SimNet chain.
-//   2. Creates a new temporary WalletTestServer connected to the running DcrdTestServer.
+//   1. Starts a new PfcdTestServer process with a fresh SimNet chain.
+//   2. Creates a new temporary WalletTestServer connected to the running PfcdTestServer.
 //   3. Gets a new address from the WalletTestServer for mining subsidy.
-//   4. Restarts the DcrdTestServer with the new mining address.
+//   4. Restarts the PfcdTestServer with the new mining address.
 //   5. Generates a number of blocks so that testing starts with a spendable
 //      balance.
 func (testSetup *ChainWithMatureOutputsSpawner) NewInstance(harnessName string) pin.Spawnable {

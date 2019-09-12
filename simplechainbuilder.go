@@ -1,4 +1,5 @@
 // Copyright (c) 2018 The btcsuite developers
+// Copyright (c) 2018 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -10,11 +11,10 @@ import (
 	"github.com/jfixby/pin"
 	"github.com/jfixby/pin/commandline"
 	"github.com/picfight/pfcd/chaincfg"
+	"github.com/picfight/pfcd/pfcutil"
 	"github.com/picfight/pfcd/rpcclient"
 	"strconv"
 	"strings"
-
-	"github.com/picfight/pfcutil"
 )
 
 // DeploySimpleChain defines harness setup sequence for this package:
@@ -28,7 +28,7 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 	fmt.Println("Deploying Harness[" + h.Name + "]")
 	createFlag := true ||
 		h.Node.Network() == &chaincfg.SimNetParams ||
-		h.Node.Network() == &chaincfg.RegressionNetParams
+		h.Node.Network() == &chaincfg.RegNetParams
 	// launch a fresh h (assumes h working dir is empty)
 	{
 		args := &launchArguments{
@@ -86,12 +86,14 @@ func DeploySimpleChain(testSetup *ChainWithMatureOutputsSpawner, h *coinharness.
 
 	{
 		if testSetup.NumMatureOutputs > 0 {
-			numToGenerate := uint32(testSetup.ActiveNet.CoinbaseMaturity) + testSetup.NumMatureOutputs
+			numToGenerate := int64(testSetup.ActiveNet.CoinbaseMaturity) + testSetup.NumMatureOutputs
 			err := generateTestChain(numToGenerate, h.NodeRPCClient().Internal().(*rpcclient.Client))
 			pin.CheckTestSetupMalfunction(err)
 		}
 		// wait for the WalletTestServer to sync up to the current height
-		h.Wallet.Sync()
+		_, H, e := h.NodeRPCClient().GetBestBlock()
+		pin.CheckTestSetupMalfunction(e)
+		h.Wallet.Sync(H)
 	}
 	fmt.Println("Harness[" + h.Name + "] is ready")
 }
@@ -126,6 +128,10 @@ func launchHarnessSequence(h *coinharness.Harness, args *launchArguments) {
 		NodeRPCConfig:            rpcConfig,
 		ExtraArguments:           args.WalletExtraArguments,
 	}
+
+	// wait for the WalletTestServer to sync up to the current height
+	_, _, e := h.NodeRPCClient().GetBestBlock()
+	pin.CheckTestSetupMalfunction(e)
 
 	wallet.Start(walletLaunchArguments)
 

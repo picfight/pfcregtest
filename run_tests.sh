@@ -36,42 +36,35 @@ testrepo () {
   GO=go
 
   $GO version
+  #pfcd --version
+  #pfcwallet --version
 
   # binary needed for RPC tests
-  env CC=gcc $GO build
+  env CC=gcc
 
   # run tests on all modules
-  ROOTPATH=$($GO list -m -f {{.Dir}} 2>/dev/null)
-  ROOTPATHPATTERN=$(echo $ROOTPATH | sed 's/\\/\\\\/g' | sed 's/\//\\\//g')
-  MODPATHS=$($GO list -m -f {{.Dir}} all 2>/dev/null | grep "^$ROOTPATHPATTERN"\
-    | sed -e "s/^$ROOTPATHPATTERN//" -e 's/^\\//' -e 's/^\///')
-  MODPATHS=". $MODPATHS"
-  for module in $MODPATHS; do
-    echo "==> ${module}"
-    env GORACE='halt_on_error=1' CC=gcc $GO test -v ./${module}/...
-  done
+
+  pushd ../../
+  git clone --depth=50 --branch=release-v1.4 https://github.com/picfight/pfcd.git picfight/pfcd
+  git clone --depth=50 --branch=release-v1.4 https://github.com/picfight/pfcwallet.git picfight/pfcwallet
+  popd
+
+  $GO fmt ./...
+  $GO build ./...
+
+  pushd ../../picfight/pfcd
+  $GO install
+  popd
+
+  pushd ../../picfight/pfcwallet
+  $GO install
+  popd
+
+  $GO test ./...
 
   echo "------------------------------------------"
   echo "Tests completed successfully!"
 }
 
-DOCKER=
-[[ "$1" == "docker" || "$1" == "podman" ]] && DOCKER=$1
-if [ ! "$DOCKER" ]; then
-    testrepo
-    exit
-fi
-
-# use Travis cache with docker
-DOCKER_IMAGE_TAG=pfcd-golang-builder-$GOVERSION
-$DOCKER pull jfixby/$DOCKER_IMAGE_TAG
-
-$DOCKER run --rm -it -v $(pwd):/src:Z jfixby/$DOCKER_IMAGE_TAG /bin/bash -c "\
-  rsync -ra --filter=':- .gitignore'  \
-  /src/ /go/src/github.com/picfight/$REPO/ && \
-  rm -r -f /go/src/github.com/picfight/pfcd && \
-  git clone https://github.com/picfight/pfcd /go/src/github.com/picfight/pfcd && \
-  pushd /go/src/github.com/picfight/pfcd && env GO111MODULE=on go install . .\cmd\...  && \
-  popd && \
-  pfcd --version  && \
-  env GOVERSION=$GOVERSION GO111MODULE=on bash run_tests.sh"
+testrepo
+exit

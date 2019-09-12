@@ -1,4 +1,5 @@
 // Copyright (c) 2018 The btcsuite developers
+// Copyright (c) 2018 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -20,7 +21,8 @@ import (
 )
 
 // Default harness name
-const mainHarnessName = "mainHarness"
+const mainHarnessName = "main"
+const mainWalletHarnessName = "main-wallet"
 
 // SimpleTestSetup harbours:
 // - rpctest setup
@@ -32,12 +34,18 @@ type SimpleTestSetup struct {
 	// complex scenarios involving multiple nodes.
 	harnessPool *pin.Pool
 
+	harnessWalletPool *pin.Pool
+
 	// Mainnet creates a mainnet test harness
 	Mainnet0 *ChainWithMatureOutputsSpawner
 
 	// Regnet25 creates a regnet test harness
 	// with 25 mature outputs.
 	Regnet25 *ChainWithMatureOutputsSpawner
+
+	// Simnet25 creates a simnet test harness
+	// with 25 mature outputs.
+	Simnet25 *ChainWithMatureOutputsSpawner
 
 	// Regnet5 creates a regnet test harness
 	// with 5 mature outputs.
@@ -68,6 +76,7 @@ type SimpleTestSetup struct {
 // and shutting down any created processes.
 func (setup *SimpleTestSetup) TearDown() {
 	setup.harnessPool.DisposeAll()
+	setup.harnessWalletPool.DisposeAll()
 	//setup.nodeGoBuilder.Dispose()
 	setup.WorkingDir.Dispose()
 }
@@ -99,7 +108,7 @@ func Setup() *SimpleTestSetup {
 	}
 
 	portManager := &LazyPortManager{
-		BasePort: 20000,
+		BasePort: 30000,
 		offset:   0,
 	}
 
@@ -113,7 +122,7 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegressionNetParams,
+		ActiveNet:         &chaincfg.RegNetParams,
 	}
 
 	setup.Mainnet0 = &ChainWithMatureOutputsSpawner{
@@ -137,7 +146,7 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegressionNetParams,
+		ActiveNet:         &chaincfg.RegNetParams,
 	}
 
 	setup.Regnet1 = &ChainWithMatureOutputsSpawner{
@@ -148,7 +157,7 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegressionNetParams,
+		ActiveNet:         &chaincfg.RegNetParams,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
 		},
@@ -168,6 +177,20 @@ func Setup() *SimpleTestSetup {
 		},
 	}
 
+	setup.Simnet25 = &ChainWithMatureOutputsSpawner{
+		WorkingDir:        setup.WorkingDir.Path(),
+		DebugNodeOutput:   true,
+		DebugWalletOutput: true,
+		NumMatureOutputs:  25,
+		NetPortManager:    portManager,
+		WalletFactory:     simnetWalletFactory,
+		NodeFactory:       nodeFactory,
+		ActiveNet:         &chaincfg.SimNetParams,
+		NodeStartExtraArguments: map[string]interface{}{
+			"rejectnonstd": commandline.NoArgumentValue,
+		},
+	}
+
 	// Deploy harness spawner with empty test chain
 	setup.Regnet0 = &ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
@@ -177,7 +200,7 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegressionNetParams,
+		ActiveNet:         &chaincfg.RegNetParams,
 	}
 	// Deploy harness spawner with empty test chain
 	setup.Simnet0 = &ChainWithMatureOutputsSpawner{
@@ -192,6 +215,7 @@ func Setup() *SimpleTestSetup {
 	}
 
 	setup.harnessPool = pin.NewPool(setup.Regnet25)
+	setup.harnessWalletPool = pin.NewPool(setup.Simnet25)
 
 	return setup
 }
@@ -206,6 +230,7 @@ func setupWorkingDir() string {
 }
 
 func setupBuild(buildName string, workingDir string, nodeProjectGoPath string) *gobuilder.GoBuider {
+
 	tempBinDir := filepath.Join(workingDir, "bin")
 	pin.MakeDirs(tempBinDir)
 
