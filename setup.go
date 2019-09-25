@@ -130,7 +130,7 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     mainnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &pfcharness.Network{&chaincfg.MainNetParams},
+		ActiveNet:         &pfcharness.Network{&chaincfg.PicFightCoinNetParams},
 		CreateTempWallet:  true,
 		NewTestSeed:       testSeed,
 	}
