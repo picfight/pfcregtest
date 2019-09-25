@@ -1,15 +1,11 @@
-// Copyright (c) 2018 The btcsuite developers
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
-
 package pfcregtest
 
 import (
-	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/chaincfg"
-	"github.com/picfight/pfcd/pfcutil"
+	"github.com/picfight/pfcd/dcrutil"
 	"github.com/picfight/pfcd/txscript"
 	"github.com/picfight/pfcd/wire"
+	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcharness"
 	"testing"
 	"time"
@@ -24,30 +20,35 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 	r := ObtainHarness(mainHarnessName)
 
 	// Generate a few test spend transactions.
-	addr, err := r.Wallet.NewAddress(nil)
+	addr, err := r.Wallet.NewAddress(coinharness.DefaultAccountName)
 	if err != nil {
 		t.Fatalf("unable to generate new address: %v", err)
 	}
-	pkScript, err := txscript.PayToAddrScript(addr.Internal().(pfcutil.Address))
+	pkScript, err := txscript.PayToAddrScript(addr.Internal().(dcrutil.Address))
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	output := wire.NewTxOut(pfcutil.AtomsPerCoin, pkScript)
+	output := wire.NewTxOut(dcrutil.AtomsPerCoin, pkScript)
+	output = output
 
 	const numTxns = 5
-	txns := make([]*pfcutil.Tx, 0, numTxns)
+	txns := make([]*dcrutil.Tx, 0, numTxns)
 	for i := 0; i < numTxns; i++ {
 		ctargs := &coinharness.CreateTransactionArgs{
-			Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
-			FeeRate: 10,
-			Change:  true,
+			//&pfcharness.OutputTx{output}
+			//Outputs: []coinharness.TxOut{&pfcharness.OutputTx{output}},
+			FeeRate:         coinharness.CoinsAmount{10},
+			Change:          true,
+			PayToAddrScript: pfcharness.PayToAddrScript,
+			TxSerializeSize: pfcharness.TxSerializeSize,
+			Account:         coinharness.DefaultAccountName,
 		}
-		tx, err := r.Wallet.CreateTransaction(ctargs)
+		tx, err := coinharness.CreateTransaction(r.Wallet, ctargs)
 		if err != nil {
 			t.Fatalf("unable to create tx: %v", err)
 		}
 
-		txns = append(txns, pfcutil.NewTx(pfcharness.TransactionTxToRaw(tx)))
+		txns = append(txns, dcrutil.NewTx(pfcharness.TransactionTxToRaw(tx)))
 	}
 
 	// Now generate a block with the default block version, and a zero'd
@@ -57,8 +58,8 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 		Txns:          txns,
 		BlockVersion:  BlockVersion,
 		BlockTime:     time.Time{},
-		MiningAddress: r.MiningAddress.Internal().(pfcutil.Address),
-		Network:       r.Node.Network().(*chaincfg.Params),
+		MiningAddress: r.MiningAddress.Internal().(dcrutil.Address),
+		Network:       r.Node.Network().Params().(*chaincfg.Params),
 	}
 	block, err := pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &newBlockArgs)
 	if err != nil {
@@ -86,8 +87,8 @@ func TestGenerateAndSubmitBlock(t *testing.T) {
 	newBlockArgs2 := pfcharness.GenerateBlockArgs{
 		BlockVersion:  targetBlockVersion,
 		BlockTime:     timestamp,
-		MiningAddress: r.MiningAddress.Internal().(pfcutil.Address),
-		Network:       r.Node.Network().(*chaincfg.Params),
+		MiningAddress: r.MiningAddress.Internal().(dcrutil.Address),
+		Network:       r.Node.Network().Params().(*chaincfg.Params),
 	}
 	block, err = pfcharness.GenerateAndSubmitBlock(r.NodeRPCClient(), &newBlockArgs2)
 	if err != nil {

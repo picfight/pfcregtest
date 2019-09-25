@@ -1,25 +1,19 @@
-PicFight regression testing
+PicFight coin regression testing
 =======
 [![Build Status](http://img.shields.io/travis/picfight/pfcregtest.svg)](https://travis-ci.org/picfight/pfcregtest)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 
-Harbours a pre-configured test setup and unit tests to run RPC-driven node tests.
+Harbours a pre-configured test setup and unit-tests to run RPC-driven node tests.
 
-Builds a pfcd-specific RPC testing harness crafting and executing integration
-tests by driving a `pfcd` instance via the `RPC` interface.
-
-Each instance of an active harness comes equipped with a simple in-memory
-HD wallet capable of properly syncing to the generated chain, creating new
-addresses, and crafting fully signed transactions paying to an arbitrary
-set of outputs.
+Builds a testing harness crafting and executing integration tests by driving a `pfcd` and `pfcwallet` instances via the `RPC` interface.
 
 ## Build 
 
 ```
 set GO111MODULE=on
 go build ./...
+go clean -testcache
 go test ./...
- 
  ```
  
  ## License

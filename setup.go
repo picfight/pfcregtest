@@ -1,18 +1,12 @@
-// Copyright (c) 2018 The btcsuite developers
-// Copyright (c) 2018 The Decred developers
-// Use of this source code is governed by an ISC
-// license that can be found in the LICENSE file.
-
 package pfcregtest
 
 import (
 	"fmt"
+	"github.com/jfixby/coinharness"
+	"github.com/picfight/pfcharness"
 	"github.com/jfixby/pin"
 	"github.com/jfixby/pin/commandline"
 	"github.com/jfixby/pin/gobuilder"
-	"github.com/picfight/pfcharness/memwallet"
-	"github.com/picfight/pfcharness/nodecls"
-	"github.com/picfight/pfcharness/walletcls"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -37,35 +31,35 @@ type SimpleTestSetup struct {
 	harnessWalletPool *pin.Pool
 
 	// Mainnet creates a mainnet test harness
-	Mainnet0 *ChainWithMatureOutputsSpawner
+	Mainnet0 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Regnet25 creates a regnet test harness
 	// with 25 mature outputs.
-	Regnet25 *ChainWithMatureOutputsSpawner
+	Regnet25 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Simnet25 creates a simnet test harness
 	// with 25 mature outputs.
-	Simnet25 *ChainWithMatureOutputsSpawner
+	Simnet25 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Regnet5 creates a regnet test harness
 	// with 5 mature outputs.
-	Regnet5 *ChainWithMatureOutputsSpawner
+	Regnet5 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Regnet1 creates a regnet test harness
 	// with 1 mature output.
-	Regnet1 *ChainWithMatureOutputsSpawner
+	Regnet1 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Simnet1 creates a simnet test harness
 	// with 1 mature output.
-	Simnet1 *ChainWithMatureOutputsSpawner
+	Simnet1 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Regnet0 creates a regnet test harness
 	// with only the genesis block.
-	Regnet0 *ChainWithMatureOutputsSpawner
+	Regnet0 *coinharness.ChainWithMatureOutputsSpawner
 
 	// Simnet0 creates a simnet test harness
 	// with only the genesis block.
-	Simnet0 *ChainWithMatureOutputsSpawner
+	Simnet0 *coinharness.ChainWithMatureOutputsSpawner
 
 	// WorkingDir defines test setup working dir
 	WorkingDir *pin.TempDirHandler
@@ -87,34 +81,35 @@ func Setup() *SimpleTestSetup {
 		WorkingDir: pin.NewTempDir(setupWorkingDir(), "simpleregtest").MakeDir(),
 	}
 
-	memWalletFactory := &memwallet.MemWalletFactory{}
+	//memWalletFactory := &memwallet.WalletFactory{}
 
 	wEXE := &commandline.ExplicitExecutablePathString{
 		PathString: "pfcwallet",
 	}
-	consoleWalletFactory := &walletcls.ConsoleWalletFactory{
+	consoleWalletFactory := &pfcharness.ConsoleWalletFactory{
 		WalletExecutablePathProvider: wEXE,
 	}
 
-	regnetWalletFactory := memWalletFactory
-	mainnetWalletFactory := memWalletFactory
+	regnetWalletFactory := consoleWalletFactory
+	mainnetWalletFactory := consoleWalletFactory
 	simnetWalletFactory := consoleWalletFactory
 
 	dEXE := &commandline.ExplicitExecutablePathString{
 		PathString: "pfcd",
 	}
-	nodeFactory := &nodecls.ConsoleNodeFactory{
+	nodeFactory := &pfcharness.ConsoleNodeFactory{
 		NodeExecutablePathProvider: dEXE,
 	}
 
-	portManager := &LazyPortManager{
+	portManager := &coinharness.LazyPortManager{
 		BasePort: 30000,
-		offset:   0,
 	}
+
+	testSeed := pfcharness.NewTestSeed
 
 	// Deploy harness spawner with generated
 	// test chain of 25 mature outputs
-	setup.Regnet25 = &ChainWithMatureOutputsSpawner{
+	setup.Regnet25 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -122,10 +117,12 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.RegNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 	}
 
-	setup.Mainnet0 = &ChainWithMatureOutputsSpawner{
+	setup.Mainnet0 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -133,12 +130,14 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     mainnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.MainNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.MainNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 	}
 
 	// Deploy harness spawner with generated
 	// test chain of 5 mature outputs
-	setup.Regnet5 = &ChainWithMatureOutputsSpawner{
+	setup.Regnet5 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -146,10 +145,12 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.RegNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 	}
 
-	setup.Regnet1 = &ChainWithMatureOutputsSpawner{
+	setup.Regnet1 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -157,13 +158,15 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.RegNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
 		},
 	}
 
-	setup.Simnet1 = &ChainWithMatureOutputsSpawner{
+	setup.Simnet1 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -171,13 +174,15 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     simnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.SimNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.SimNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
 		},
 	}
 
-	setup.Simnet25 = &ChainWithMatureOutputsSpawner{
+	setup.Simnet25 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -185,14 +190,16 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     simnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.SimNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.SimNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 		NodeStartExtraArguments: map[string]interface{}{
 			"rejectnonstd": commandline.NoArgumentValue,
 		},
 	}
 
 	// Deploy harness spawner with empty test chain
-	setup.Regnet0 = &ChainWithMatureOutputsSpawner{
+	setup.Regnet0 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -200,10 +207,12 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     regnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.RegNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.RegNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 	}
 	// Deploy harness spawner with empty test chain
-	setup.Simnet0 = &ChainWithMatureOutputsSpawner{
+	setup.Simnet0 = &coinharness.ChainWithMatureOutputsSpawner{
 		WorkingDir:        setup.WorkingDir.Path(),
 		DebugNodeOutput:   true,
 		DebugWalletOutput: true,
@@ -211,7 +220,9 @@ func Setup() *SimpleTestSetup {
 		NetPortManager:    portManager,
 		WalletFactory:     simnetWalletFactory,
 		NodeFactory:       nodeFactory,
-		ActiveNet:         &chaincfg.SimNetParams,
+		ActiveNet:         &pfcharness.Network{&chaincfg.SimNetParams},
+		CreateTempWallet:  true,
+		NewTestSeed:       testSeed,
 	}
 
 	setup.harnessPool = pin.NewPool(setup.Regnet25)

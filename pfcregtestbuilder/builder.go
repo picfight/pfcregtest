@@ -32,9 +32,16 @@ func nameGenerator(data string) string {
 }
 
 func fileGenerator(data string) string {
+
+	data = coinknife.Replace(data, "Decred regression testing", "PicFight coin regression testing")
+	data = coinknife.Replace(data, "jfixby/dcr", "picfight/pfc")
 	data = coinknife.Replace(data, "decred/dcrd", "picfight/pfcd")
 	data = coinknife.Replace(data, "dcrharness", "pfcharness")
+	data = coinknife.Replace(data, "dcrregtest", "pfcregtest")
+	data = coinknife.Replace(data, "dcrwallet", "pfcwallet")
+	data = coinknife.Replace(data, "DCR", "PFC")
 	data = coinknife.Replace(data, "dcrd", "pfcd")
+
 	return data
 }
 
@@ -153,10 +160,7 @@ func processableFiles(file string) bool {
 	if strings.HasSuffix(file, ".js") {
 		return false
 	}
-	if strings.HasSuffix(file, ".sh") {
-		return false
-	}
-	if strings.HasSuffix(file, ".css") {
+		if strings.HasSuffix(file, ".css") {
 		return false
 	}
 	if strings.HasSuffix(file, ".lock") {
@@ -186,9 +190,7 @@ func processableFiles(file string) bool {
 	if strings.HasSuffix(file, ".toml") {
 		return false
 	}
-	if strings.HasSuffix(file, ".md") {
-		return false
-	}
+
 	if strings.HasSuffix(file, ".xml") {
 		return false
 	}
@@ -222,6 +224,12 @@ func processableFiles(file string) bool {
 		return true
 	}
 	if strings.HasSuffix(file, ".go") {
+		return true
+	}
+	if strings.HasSuffix(file, ".sh") {
+		return true
+	}
+	if strings.HasSuffix(file, ".md") {
 		return true
 	}
 

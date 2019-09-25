@@ -2,14 +2,15 @@ package pfcregtest
 
 import (
 	"bytes"
-	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcd/chaincfg/chainhash"
-	"github.com/picfight/pfcd/pfcjson"
-	"github.com/picfight/pfcd/pfcutil"
+	"github.com/picfight/pfcd/dcrjson"
+	"github.com/picfight/pfcd/dcrutil"
 	"github.com/picfight/pfcd/rpcclient"
 	"github.com/picfight/pfcd/txscript"
 	"github.com/picfight/pfcd/wire"
+	"github.com/jfixby/coinharness"
 	"github.com/picfight/pfcharness"
+	"github.com/jfixby/pin"
 	"testing"
 	"time"
 )
@@ -130,7 +131,7 @@ func checkJoinBlocks(t *testing.T) {
 	nodeSlice := []*coinharness.Harness{r, h}
 	blocksSynced := make(chan struct{})
 	go func() {
-		if err := coinharness.JoinNodes(pfcjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
+		if err := coinharness.JoinNodes(dcrjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
 			t.Fatalf("unable to join node on blocks: %v", err)
 		}
 		blocksSynced <- struct{}{}
@@ -167,7 +168,7 @@ func checkJoinMempools(t *testing.T) {
 	r := ObtainHarness(mainHarnessName)
 
 	// Assert main test harness has no transactions in its mempool.
-	pooledHashes, err := r.NodeRPCClient().GetRawMempool(pfcjson.GRMAll)
+	pooledHashes, err := r.NodeRPCClient().GetRawMempool(dcrjson.GRMAll)
 	if err != nil {
 		t.Fatalf("unable to get mempool for main test harness: %v", err)
 	}
@@ -186,30 +187,44 @@ func checkJoinMempools(t *testing.T) {
 
 	// Both mempools should be considered synced as they are empty.
 	// Therefore, this should return instantly.
-	if err := coinharness.JoinNodes(pfcjson.GRMAll, nodeSlice, coinharness.Mempools); err != nil {
+	if err := coinharness.JoinNodes(dcrjson.GRMAll, nodeSlice, coinharness.Mempools); err != nil {
 		t.Fatalf("unable to join node on mempools: %v", err)
 	}
 
 	// Generate a coinbase spend to a new address within the main harness'
 	// mempool.
-	addr, err := r.Wallet.NewAddress(nil)
+	addr, err := r.Wallet.NewAddress(coinharness.DefaultAccountName)
 	if err != nil {
 		t.Fatalf("unable to generate address: %v", err)
 	}
-	addrScript, err := txscript.PayToAddrScript(addr.Internal().(pfcutil.Address))
+	addrScript, err := pfcharness.PayToAddrScript(addr)
 	if err != nil {
 		t.Fatalf("unable to generate pkscript to addr: %v", err)
 	}
 
-	output := wire.NewTxOut(5e8, addrScript)
-	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
-		FeeRate: 10,
+	accounts, err := r.Wallet.ListAccounts()
+	if err != nil {
+		t.Fatalf("unable to ListAccounts: %v", err)
 	}
-	testTx, err := r.Wallet.CreateTransaction(ctargs)
+	pin.S("accounts", accounts)
+
+	output := &coinharness.TxOut{
+		Value:   coinharness.CoinsAmountFromFloat(5),
+		PkScript: addrScript,
+		Version:  wire.DefaultPkScriptVersion,
+	}
+	ctargs := &coinharness.CreateTransactionArgs{
+		Outputs:         []*coinharness.TxOut{output},
+		FeeRate:         coinharness.CoinsAmount{10},
+		PayToAddrScript: pfcharness.PayToAddrScript,
+		TxSerializeSize: pfcharness.TxSerializeSize,
+		Account:         coinharness.DefaultAccountName,
+	}
+	testTx, err := coinharness.CreateTransaction(r.Wallet, ctargs)
 	if err != nil {
 		t.Fatalf("coinbase spend failed: %v", err)
 	}
+	pin.S("testTx", testTx)
 	if _, err := r.NodeRPCClient().SendRawTransaction(testTx, true); err != nil {
 		t.Fatalf("send transaction failed: %v", err)
 	}
@@ -219,7 +234,7 @@ func checkJoinMempools(t *testing.T) {
 	harnessSynced := make(chan struct{})
 	go func() {
 		for {
-			poolHashes, err := r.NodeRPCClient().GetRawMempool(pfcjson.GRMAll)
+			poolHashes, err := r.NodeRPCClient().GetRawMempool(dcrjson.GRMAll)
 			if err != nil {
 				t.Fatalf("failed to retrieve harness mempool: %v", err)
 			}
@@ -240,7 +255,7 @@ func checkJoinMempools(t *testing.T) {
 	// should be blocked on the JoinNodes call.
 	poolsSynced := make(chan struct{})
 	go func() {
-		if err := coinharness.JoinNodes(pfcjson.GRMAll, nodeSlice, coinharness.Mempools); err != nil {
+		if err := coinharness.JoinNodes(dcrjson.GRMAll, nodeSlice, coinharness.Mempools); err != nil {
 			t.Fatalf("unable to join node on mempools: %v", err)
 		}
 		poolsSynced <- struct{}{}
@@ -256,7 +271,7 @@ func checkJoinMempools(t *testing.T) {
 	if err := coinharness.ConnectNode(h, r, rpcclient.ANAdd); err != nil {
 		t.Fatalf("unable to connect harnesses: %v", err)
 	}
-	if err := coinharness.JoinNodes(pfcjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
+	if err := coinharness.JoinNodes(dcrjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
 		t.Fatalf("unable to join node on blocks: %v", err)
 	}
 
@@ -281,32 +296,40 @@ func checkJoinMempools(t *testing.T) {
 func TestMemWalletLockedOutputs(t *testing.T) {
 	r := ObtainHarness(mainHarnessName)
 	// Obtain the initial balance of the wallet at this point.
-	startingBalance := coinharness.GetBalance(t, r.Wallet).TotalSpendable.(pfcutil.Amount)
+	startingBalance := coinharness.GetBalance(t, r.Wallet).Balances[coinharness.DefaultAccountName].Spendable
 
 	// First, create a signed transaction spending some outputs.
-	addr, err := r.Wallet.NewAddress(nil)
+	addr, err := r.Wallet.NewAddress(coinharness.DefaultAccountName)
 	if err != nil {
 		t.Fatalf("unable to generate new address: %v", err)
 	}
-	pkScript, err := txscript.PayToAddrScript(addr.Internal().(pfcutil.Address))
+	pkScript, err := txscript.PayToAddrScript(addr.Internal().(dcrutil.Address))
 	if err != nil {
 		t.Fatalf("unable to create script: %v", err)
 	}
-	outputAmt := pfcutil.Amount(50 * pfcutil.AtomsPerCoin)
-	output := wire.NewTxOut(int64(outputAmt), pkScript)
-	ctargs := &coinharness.CreateTransactionArgs{
-		Outputs: []coinharness.OutputTx{&pfcharness.OutputTx{output}},
-		FeeRate: 10,
+
+	outputAmt := coinharness.CoinsAmountFromFloat(50)
+	output := &coinharness.TxOut{
+		Value:    outputAmt,
+		PkScript: pkScript,
+		Version:  wire.DefaultPkScriptVersion,
 	}
-	tx, err := r.Wallet.CreateTransaction(ctargs)
+	ctargs := &coinharness.CreateTransactionArgs{
+		Outputs:         []*coinharness.TxOut{output},
+		FeeRate:         coinharness.CoinsAmount{10},
+		PayToAddrScript: pfcharness.PayToAddrScript,
+		TxSerializeSize: pfcharness.TxSerializeSize,
+		Account:         coinharness.DefaultAccountName,
+	}
+	_, err = coinharness.CreateTransaction(r.Wallet, ctargs)
 	if err != nil {
 		t.Fatalf("unable to create transaction: %v", err)
 	}
 
 	// The current wallet balance should now be at least 50 BTC less
 	// (accounting for fees) than the period balance
-	currentBalance := coinharness.GetBalance(t, r.Wallet).TotalSpendable.(pfcutil.Amount)
-	if !(currentBalance <= startingBalance-outputAmt) {
+	currentBalance := coinharness.GetBalance(t, r.Wallet).Balances[coinharness.DefaultAccountName].Spendable
+	if !(currentBalance.AtomsValue <= startingBalance.AtomsValue-outputAmt.AtomsValue) {
 		t.Fatalf("spent outputs not locked: previous balance %v, "+
 			"current balance %v", startingBalance, currentBalance)
 	}
@@ -314,13 +337,9 @@ func TestMemWalletLockedOutputs(t *testing.T) {
 	// Now unlocked all the spent inputs within the unbroadcast signed
 	// transaction. The current balance should now be exactly that of the
 	// starting balance.
-	txin := tx.TxIn()
-	inpts := make([]coinharness.InputTx, len(txin))
-	for i, j := range txin {
-		inpts[i] = j
-	}
-	r.Wallet.UnlockOutputs(inpts)
-	currentBalance = coinharness.GetBalance(t, r.Wallet).TotalSpendable.(pfcutil.Amount)
+	//txin := tx.TxIn
+	//r.Wallet.UnlockOutputs(txin)
+	currentBalance = coinharness.GetBalance(t, r.Wallet).Balances[coinharness.DefaultAccountName].Spendable
 	if currentBalance != startingBalance {
 		t.Fatalf("current and starting balance should now match: "+
 			"expected %v, got %v", startingBalance, currentBalance)
@@ -354,9 +373,9 @@ func TestMemWalletReorg(t *testing.T) {
 	defer testSetup.Regnet5.Dispose(h)
 	h.Wallet.Sync(testSetup.Regnet5.NumMatureOutputs)
 
-	expectedBalance := pfcutil.Amount(1200 * pfcutil.AtomsPerCoin)
-	walletBalance := coinharness.GetBalance(t, h.Wallet).TotalSpendable.(pfcutil.Amount)
-	if expectedBalance != walletBalance {
+	expectedBalance := coinharness.CoinsAmountFromFloat(1200)
+	walletBalance := coinharness.GetBalance(t, h.Wallet).Balances[coinharness.DefaultAccountName].Spendable
+	if expectedBalance.AtomsValue != walletBalance.AtomsValue {
 		t.Fatalf("wallet balance incorrect: expected %v, got %v",
 			expectedBalance, walletBalance)
 	}
@@ -367,16 +386,16 @@ func TestMemWalletReorg(t *testing.T) {
 		t.Fatalf("unable to connect harnesses: %v", err)
 	}
 	nodeSlice := []*coinharness.Harness{r, h}
-	if err := coinharness.JoinNodes(pfcjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
+	if err := coinharness.JoinNodes(dcrjson.GRMAll, nodeSlice, coinharness.Blocks); err != nil {
 		t.Fatalf("unable to join node on blocks: %v", err)
 	}
 
 	// The original wallet should now have a balance of 0 BTC as its entire
 	// chain should have been decimated in favor of the main h'
 	// chain.
-	expectedBalance = pfcutil.Amount(0)
-	walletBalance = coinharness.GetBalance(t, h.Wallet).TotalSpendable.(pfcutil.Amount)
-	if expectedBalance != walletBalance {
+	expectedBalance = coinharness.CoinsAmountFromFloat(0)
+	walletBalance = coinharness.GetBalance(t, h.Wallet).Balances[coinharness.DefaultAccountName].Spendable
+	if expectedBalance.AtomsValue != walletBalance.AtomsValue {
 		t.Fatalf("wallet balance incorrect: expected %v, got %v",
 			expectedBalance, walletBalance)
 	}

@@ -2,14 +2,14 @@ package pfcregtest
 
 import (
 	"fmt"
-	"github.com/jfixby/coinharness"
-	"github.com/jfixby/pin"
 	"github.com/picfight/pfcd/chaincfg/chainhash"
-	"github.com/picfight/pfcd/pfcjson"
-	"github.com/picfight/pfcd/pfcutil"
+	"github.com/picfight/pfcd/dcrjson"
+	"github.com/picfight/pfcd/dcrutil"
 	"github.com/picfight/pfcd/rpcclient"
 	"github.com/picfight/pfcd/wire"
-	"github.com/picfight/pfcwallet/errors"
+	"github.com/decred/pfcwallet/errors"
+	"github.com/jfixby/coinharness"
+	"github.com/jfixby/pin"
 	"math"
 	"testing"
 	"time"
@@ -21,7 +21,7 @@ func mineBlock(t *testing.T, r *coinharness.Harness) {
 		t.Fatal("Failed to get chain height:", err)
 	}
 
-	err = generateTestChain(1, r.NodeRPCClient().Internal().(*rpcclient.Client))
+	err = coinharness.GenerateTestChain(1, r.NodeRPCClient())
 	if err != nil {
 		t.Fatal("Failed to mine block:", err)
 	}
@@ -41,7 +41,7 @@ func mineBlock(t *testing.T, r *coinharness.Harness) {
 	}
 }
 
-func reverse(results []pfcjson.ListTransactionsResult) []pfcjson.ListTransactionsResult {
+func reverse(results []dcrjson.ListTransactionsResult) []dcrjson.ListTransactionsResult {
 	i := 0
 	j := len(results) - 1
 	for i < j {
@@ -86,8 +86,8 @@ func generateListeningPorts(index, base int) (int, int, int) {
 	return x, y, z
 }
 
-func getMiningAddr(walletClient *rpcclient.Client) pfcutil.Address {
-	var miningAddr pfcutil.Address
+func getMiningAddr(walletClient *rpcclient.Client) dcrutil.Address {
+	var miningAddr dcrutil.Address
 	var err error = nil
 	for i := 0; i < 100; i++ {
 		miningAddr, err = walletClient.GetNewAddress("default")
@@ -131,7 +131,7 @@ func GenerateBlock(h *coinharness.Harness, startHeight uint32) ([]*chainhash.Has
 	return blockHashes, nil
 }
 
-func mustGetStakeInfo(wcl *rpcclient.Client, t *testing.T) *pfcjson.GetStakeInfoResult {
+func mustGetStakeInfo(wcl *rpcclient.Client, t *testing.T) *dcrjson.GetStakeInfoResult {
 	stakeinfo, err := wcl.GetStakeInfo()
 	if err != nil {
 		t.Fatal("GetStakeInfo failed: ", err)
@@ -174,7 +174,7 @@ func advanceToHeight(r *coinharness.Harness, t *testing.T, height uint32) {
 }
 
 func newBlockAt(currentHeight uint32, r *coinharness.Harness,
-	t *testing.T) (uint32, *pfcutil.Block, []*chainhash.Hash) {
+	t *testing.T) (uint32, *dcrutil.Block, []*chainhash.Hash) {
 	height, block, blockHashes := newBlockAtQuick(currentHeight, r, t)
 
 	time.Sleep(700 * time.Millisecond)
@@ -183,7 +183,7 @@ func newBlockAt(currentHeight uint32, r *coinharness.Harness,
 }
 
 func newBlockAtQuick(currentHeight uint32, r *coinharness.Harness,
-	t *testing.T) (uint32, *pfcutil.Block, []*chainhash.Hash) {
+	t *testing.T) (uint32, *dcrutil.Block, []*chainhash.Hash) {
 
 	blockHashes, err := GenerateBlock(r, currentHeight)
 	if err != nil {
@@ -195,10 +195,10 @@ func newBlockAtQuick(currentHeight uint32, r *coinharness.Harness,
 		t.Fatalf("Unable to get block: %v", err)
 	}
 
-	return block.Header.Height, pfcutil.NewBlock(block), blockHashes
+	return block.Header.Height, dcrutil.NewBlock(block), blockHashes
 }
 
-func getBestBlock(r *coinharness.Harness, t *testing.T) (uint32, *pfcutil.Block, *chainhash.Hash) {
+func getBestBlock(r *coinharness.Harness, t *testing.T) (uint32, *dcrutil.Block, *chainhash.Hash) {
 	bestBlockHash, err := r.NodeRPCClient().Internal().(*rpcclient.Client).GetBestBlockHash()
 	if err != nil {
 		t.Fatalf("Unable to get best block hash: %v", err)
@@ -209,7 +209,7 @@ func getBestBlock(r *coinharness.Harness, t *testing.T) (uint32, *pfcutil.Block,
 	}
 	curBlockHeight := bestBlock.Header.Height
 
-	return curBlockHeight, pfcutil.NewBlock(bestBlock), bestBlockHash
+	return curBlockHeight, dcrutil.NewBlock(bestBlock), bestBlockHash
 }
 
 func getBestBlockHeight(r *coinharness.Harness, t *testing.T) uint32 {
@@ -222,14 +222,14 @@ func getBestBlockHeight(r *coinharness.Harness, t *testing.T) uint32 {
 }
 
 func newBestBlock(r *coinharness.Harness,
-	t *testing.T) (uint32, *pfcutil.Block, []*chainhash.Hash) {
+	t *testing.T) (uint32, *dcrutil.Block, []*chainhash.Hash) {
 	height := getBestBlockHeight(r, t)
 	height, block, blockHash := newBlockAt(height, r, t)
 	return height, block, blockHash
 }
 
 // includesTx checks if a block contains a transaction hash
-func includesTx(txHash *chainhash.Hash, block *pfcutil.Block) bool {
+func includesTx(txHash *chainhash.Hash, block *dcrutil.Block) bool {
 	if len(block.Transactions()) <= 1 {
 		return false
 	}
@@ -247,7 +247,7 @@ func includesTx(txHash *chainhash.Hash, block *pfcutil.Block) bool {
 }
 
 // includesTx checks if a block contains a transaction hash
-func includesStakeTx(txHash *chainhash.Hash, block *pfcutil.Block) bool {
+func includesStakeTx(txHash *chainhash.Hash, block *dcrutil.Block) bool {
 	if len(block.STransactions()) <= 1 {
 		return false
 	}
@@ -266,7 +266,7 @@ func includesStakeTx(txHash *chainhash.Hash, block *pfcutil.Block) bool {
 
 // getWireMsgTxFee computes the effective absolute fee from a Tx as the amount
 // spent minus sent.
-func getWireMsgTxFee(tx *pfcutil.Tx) pfcutil.Amount {
+func getWireMsgTxFee(tx *dcrutil.Tx) dcrutil.Amount {
 	var totalSpent int64
 	for _, txIn := range tx.MsgTx().TxIn {
 		totalSpent += txIn.ValueIn
@@ -277,12 +277,12 @@ func getWireMsgTxFee(tx *pfcutil.Tx) pfcutil.Amount {
 		totalSent += txOut.Value
 	}
 
-	return pfcutil.Amount(totalSpent - totalSent)
+	return dcrutil.Amount(totalSpent - totalSent)
 }
 
 // getOutPointString uses OutPoint.String() to combine the tx hash with vout
 // index from a ListUnspentResult.
-func getOutPointString(utxo *pfcjson.ListUnspentResult) (string, error) {
+func getOutPointString(utxo *dcrjson.ListUnspentResult) (string, error) {
 	txhash, err := chainhash.NewHashFromStr(utxo.TxID)
 	if err != nil {
 		return "", err
