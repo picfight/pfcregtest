@@ -8,7 +8,7 @@ REPO=pfcregtest
 
 testrepo () {
   GO=go
-  PROJECT=decred
+  PROJECT=picfight
   NODE_REPO=pfcd
   WALLET_REPO=pfcwallet
   GO111MODULE=on
@@ -22,7 +22,7 @@ testrepo () {
 
   pushd ../../
   git clone --depth=50 --branch=master https://github.com/${PROJECT}/${NODE_REPO}.git ${PROJECT}/${NODE_REPO}
-  git clone --depth=50 --branch=add_regnet https://github.com/jfixby/${WALLET_REPO}.git ${PROJECT}/${WALLET_REPO}
+  git clone --depth=50 --branch=add_regnet https://github.com/${PROJECT}/${WALLET_REPO}.git ${PROJECT}/${WALLET_REPO}
   popd
 
   $GO fmt ./...
