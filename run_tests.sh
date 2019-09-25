@@ -1,32 +1,6 @@
 #!/usr/bin/env bash
 
-# usage:
-# ./run_tests.sh                         # local, go 1.12
-# GOVERSION=1.11 ./run_tests.sh          # local, go 1.11
-# ./run_tests.sh docker                  # docker, go 1.12
-# GOVERSION=1.11 ./run_tests.sh docker   # docker, go 1.11
-# ./run_tests.sh podman                  # podman, go 1.12
-# GOVERSION=1.11 ./run_tests.sh podman   # podman, go 1.11
-
 set -ex
-
-# The script does automatic checking on a Go package and its sub-packages,
-# including:
-# 1. gofmt         (https://golang.org/cmd/gofmt/)
-# 2. gosimple      (https://github.com/dominikh/go-simple)
-# 3. unconvert     (https://github.com/mdempsky/unconvert)
-# 4. ineffassign   (https://github.com/gordonklaus/ineffassign)
-# 5. go vet        (https://golang.org/cmd/vet)
-# 6. misspell      (https://github.com/client9/misspell)
-# 7. race detector (https://blog.golang.org/race-detector)
-
-# golangci-lint (github.com/golangci/golangci-lint) is used to run each each
-# static checker.
-
-# To run on docker on windows, symlink /mnt/c to /c and then execute the script
-# from the repo path under /c.  See:
-# https://github.com/Microsoft/BashOnWindows/issues/1854
-# for more details.
 
 # Default GOVERSION
 [[ ! "$GOVERSION" ]] && GOVERSION=1.12
@@ -34,36 +8,41 @@ REPO=pfcregtest
 
 testrepo () {
   GO=go
+  PROJECT=decred
+  NODE_REPO=pfcd
+  WALLET_REPO=pfcwallet
+  GO111MODULE=on
 
   $GO version
-  #pfcd --version
-  #pfcwallet --version
 
   # binary needed for RPC tests
   env CC=gcc
 
   # run tests on all modules
 
-  export GO111MODULE=on
-  GO111MODULE=on
-
   pushd ../../
-  git clone --depth=50 --branch=master https://github.com/picfight/pfcd.git picfight/pfcd
-  git clone --depth=50 --branch=master https://github.com/picfight/pfcwallet.git picfight/pfcwallet
-  popd
-
-  pushd ../../picfight/pfcd
-  $GO install
-  popd
-
-  pushd ../../picfight/pfcwallet
-  $GO install
+  git clone --depth=50 --branch=master https://github.com/${PROJECT}/${NODE_REPO}.git ${PROJECT}/${NODE_REPO}
+  git clone --depth=50 --branch=add_regnet https://github.com/jfixby/${WALLET_REPO}.git ${PROJECT}/${WALLET_REPO}
   popd
 
   $GO fmt ./...
   $GO build ./...
+
+  pushd ../../${PROJECT}/${NODE_REPO}
+  $GO build ./...
+  $GO install -v . ./cmd/...
+  popd
+
+  pushd ../../${PROJECT}/${WALLET_REPO}
+  $GO build ./...
+  $GO install -v . ./cmd/...
+  popd
+
+  ${NODE_REPO} --version
+  ${WALLET_REPO} --version
   $GO clean -testcache
-  $GO test ./...
+  $GO build ./...
+  $GO test -v ./...
 
   echo "------------------------------------------"
   echo "Tests completed successfully!"
